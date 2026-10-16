@@ -1,0 +1,172 @@
+// بنيان - بناء منصة تربط موردي مواد البناء بعملاء المقاولات في السعودية
+// Prisma schema for SQLite
+//
+// ملاحظة: SQLite لا يدعم أنواع enum الأصلية ولا النوع Decimal ولا مرشّح
+// mode: "insensitive"، لذلك تُخزَّن الحالات والوحدات كسلاسل نصية (String)
+// وتُخزَّن المبالغ كأرقام عشرية (Float).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String?
+  city         String?
+  passwordHash String
+  role         String   @default("CUSTOMER") // CUSTOMER | SUPPLIER | ADMIN
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  supplier     SupplierProfile?
+  orders       Order[]          @relation("CustomerOrders")
+  sentMessages Message[]        @relation("SentMessages")
+  reviews      Review[]
+}
+
+model SupplierProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName String
+  slug        String   @unique
+  crNumber    String? // رقم السجل التجاري
+  vatNumber   String? // الرقم الضريبي
+  phone       String?
+  whatsapp    String?
+  city        String
+  region      String
+  address     String?
+  description String?
+  logoUrl     String?
+  status      String   @default("PENDING") // PENDING | APPROVED | REJECTED | SUSPENDED
+  ratingSum   Int      @default(0)
+  ratingCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  materials Material[]
+  orders    Order[]
+  reviews   Review[]
+
+  @@index([status])
+  @@index([city])
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  icon      String?
+  createdAt DateTime @default(now())
+
+  materials Material[]
+}
+
+model Material {
+  id          String   @id @default(cuid())
+  supplierId  String
+  supplier    SupplierProfile @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  name        String
+  description String?
+  unit        String   @default("PIECE") // BAG | TON | CUBIC_METER | ...
+  price       Float
+  minOrderQty Int      @default(1)
+  stock       Int?
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  city        String
+  region      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems OrderItem[]
+
+  @@index([categoryId])
+  @@index([supplierId])
+  @@index([city])
+  @@index([isActive])
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  number          String   @unique
+  customerId      String
+  customer        User     @relation("CustomerOrders", fields: [customerId], references: [id])
+  supplierId      String?
+  supplier        SupplierProfile? @relation(fields: [supplierId], references: [id])
+  requestedSupplierName String? // اسم مورد المادة المطلوبة (مرجعي للإدارة)
+  assignedAt      DateTime?
+  status          String   @default("AWAITING_SUPPLIER") // AWAITING_SUPPLIER | CONFIRMED | PROCESSING | SHIPPED | DELIVERED | CANCELLED
+  subtotal        Float
+  vat             Float
+  total           Float
+  deliveryCity    String
+  deliveryAddress String?
+  deliveryDate    DateTime?
+  contactPhone    String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items    OrderItem[]
+  messages Message[]
+  review   Review?
+
+  @@index([customerId])
+  @@index([supplierId])
+  @@index([status])
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  materialId String?
+  material   Material? @relation(fields: [materialId], references: [id], onDelete: SetNull)
+  name       String
+  unit       String
+  quantity   Int
+  unitPrice  Float
+  lineTotal  Float
+
+  @@index([orderId])
+}
+
+model Message {
+  id         String    @id @default(cuid())
+  orderId    String?
+  order      Order?    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  senderId   String
+  sender     User      @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId String?
+  body       String
+  createdAt  DateTime  @default(now())
+  readAt     DateTime?
+
+  @@index([orderId])
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  supplierId String
+  supplier   SupplierProfile @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  customerId String
+  customer   User     @relation(fields: [customerId], references: [id])
+  orderId    String?  @unique
+  order      Order?   @relation(fields: [orderId], references: [id])
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  @@index([supplierId])
+}
