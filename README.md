@@ -90,6 +90,8 @@ npm run dev
 | -------------------- | --------------------------------------- |
 | `npm run dev`        | تشغيل خادم التطوير                      |
 | `npm run build`      | بناء الإنتاج                            |
+| `npm run start`      | تشغيل الإنتاج (مزامنة DB + خادم Next)   |
+| `npm run start:next` | تشغيل Next فقط بدون مزامنة DB           |
 | `npm run typecheck`  | توليد أنواع المسارات + فحص TypeScript   |
 | `npm run lint`       | ESLint                                  |
 | `npm run db:push`    | مزامنة المخطط مع قاعدة البيانات         |
@@ -104,6 +106,9 @@ prisma/
   schema.prisma        # نماذج البيانات (SQLite)
   seed.ts              # بيانات تجريبية
   dev.db               # ملف قاعدة البيانات (يُنشأ محلياً، مستثنى من git)
+scripts/
+  start.mjs            # نقطة تشغيل الإنتاج (DB push + إنشاء الإدارة + Next)
+Dockerfile             # صورة النشر (قرص دائم على /data)
 src/
   app/                 # الصفحات (App Router)
     materials/         # الكتالوج وتفاصيل المادة
@@ -133,6 +138,54 @@ SQLite لا يدعم أنواع `enum` ولا النوع `Decimal` ولا مرش
 
 ## النشر
 
-- اضبط `DATABASE_URL` (SQLite أو Postgres) و`SESSION_SECRET` في بيئة الإنتاج.
-- شغّل `npm run build` ثم `npm run start`.
-- ملاحظة: على المنصات بدون قرص دائم (مثل Vercel) لن تُحفظ قاعدة SQLite؛ استخدم Postgres للإنتاج.
+> **مهم:** SQLite يحتاج **قرصاً دائماً**. المنصّات التي تعمل بنظام الملفات المؤقت أو للقراءة
+> فقط (مثل Vercel وNetlify وAWS Lambda) **لا يمكنها تشغيل SQLite**، وستظهر لك رسالة
+> `Unable to open the database file`. استخدم منصة تدعم وحدات التخزين الدائمة (Railway أو
+> Render أو Fly.io أو خادم VPS).
+
+### المتطلبات في بيئة الإنتاج
+
+| المتغيّر          | القيمة                                                        |
+| ----------------- | ------------------------------------------------------------ |
+| `DATABASE_URL`    | مسار **مطلق** على القرص الدائم، مثال: `file:/data/bunyan.db` |
+| `SESSION_SECRET`  | نص عشوائي 32+ حرف                                            |
+| `ADMIN_EMAIL`     | (اختياري) لإنشاء حساب إدارة تلقائياً عند الإقلاع             |
+| `ADMIN_PASSWORD`  | (اختياري) كلمة مرور حساب الإدارة                            |
+| `PORT`            | منفذ الخدمة (تضبطه المنصة عادةً)                             |
+
+يقوم `npm run start` تلقائياً عند الإقلاع بـ:
+
+1. مزامنة مخطط قاعدة البيانات مع ملف SQLite على القرص الدائم (`prisma db push`).
+2. إنشاء حساب الإدارة إذا كانت `ADMIN_EMAIL` و`ADMIN_PASSWORD` مضبوطتين.
+3. تشغيل خادم Next.js.
+
+### النشر عبر Docker (Railway / Render / Fly.io / VPS)
+
+المستودع يتضمّن `Dockerfile` جاهزاً.
+
+```bash
+# مثال لخادم VPS
+docker build -t bunyan .
+docker run -d --name bunyan -p 3000:3000 \
+  -v /srv/bunyan-data:/data \
+  -e SESSION_SECRET="<سر عشوائي 32+ حرف>" \
+  -e ADMIN_EMAIL="admin@bunyan.sa" \
+  -e ADMIN_PASSWORD="<كلمة مرور قوية>" \
+  bunyan
+```
+
+- **Railway:** أضف Volume واربطه بالمسار `/data`، ثم اضبط المتغيّرات أعلاه
+  (`DATABASE_URL=file:/data/bunyan.db`).
+- **Render:** أضف Disk بنقطة الربط `/data`، وبنفس المتغيّرات.
+- **Fly.io:** أنشئ Volume (`fly volumes create bunyan_data`) واربطه بـ `/data`.
+
+### النشر بدون Docker (Node مباشر)
+
+```bash
+npm ci
+npm run build
+DATABASE_URL="file:/data/bunyan.db" SESSION_SECRET="..." npm run start
+```
+
+> تأكّد أن مسار `DATABASE_URL` داخل مجلد مُثبَّت بشكل دائم (Persistent Volume)، وإلا فُقدت
+> البيانات عند إعادة النشر.

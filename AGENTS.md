@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Project: بنيان (bunyan)
 
-Saudi building-materials marketplace. Next.js 16 (App Router, Server Actions) + Prisma 6 + PostgreSQL, Arabic RTL UI, Tailwind v4, custom JWT session auth (`jose` + `bcryptjs`) with a DAL and `src/proxy.ts`.
+Saudi building-materials marketplace. Next.js 16 (App Router, Server Actions) + Prisma 6 + SQLite, Arabic RTL UI, Tailwind v4, custom JWT session auth (`jose` + `bcryptjs`) with a DAL and `src/proxy.ts`.
 
 ### Commands (run after changes)
 
@@ -23,6 +23,8 @@ Saudi building-materials marketplace. Next.js 16 (App Router, Server Actions) + 
 
 - Database is **SQLite** (`DATABASE_URL="file:./dev.db"`, file created by `npm run db:push`). `SESSION_SECRET` must be set in `.env`.
 - SQLite has no native enums, `Decimal`, or `mode: "insensitive"`: statuses/roles/units are `String`, money is `Float`. Keep this in mind when adding fields/queries.
+- **Deployment:** SQLite requires a persistent disk, so it cannot run on Vercel/Netlify/Lambda (`Unable to open the database file`). Target a host with volumes (Railway/Render/Fly.io/VPS). `Dockerfile` mounts the DB at `file:/data/bunyan.db`; `npm run start` (`scripts/start.mjs`) runs `prisma db push`, optionally creates an admin from `ADMIN_EMAIL`/`ADMIN_PASSWORD`, then `next start`. Use `npm run start:next` to skip the DB sync step.
+- On Windows, `prisma generate` fails with `EPERM ... query_engine-windows.dll.node` while `next dev` is running; stop the dev server before regenerating.
 - Prisma CLI on Windows may hang when invoked directly through some shells; run it with output redirected to a file if so. Prisma is pinned to 6.19.3 (do not use the `latest` dist-tag).
 - The seed script runs via `node --import tsx prisma/seed.ts` (bare `tsx` is not on PATH when Prisma spawns the seed command).
 - `cacheComponents` is intentionally disabled (`next.config.ts`) to use the classic dynamic rendering model.
