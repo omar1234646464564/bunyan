@@ -17,12 +17,12 @@ Saudi building-materials marketplace. Next.js 16 (App Router, Server Actions) + 
 - `npm run lint` — ESLint (must pass).
 - `npm run typecheck` — runs `next typegen` then `tsc --noEmit` (must pass). Run `next typegen` first; the `PageProps<"/...">` / `LayoutProps<"/...">` helpers are generated into `.next/types` and must be regenerated when routes change.
 - `npm run build` — production build (verifies everything; routes are dynamic via `export const dynamic = "force-dynamic"` in the root layout).
-- Database: `npm run db:push`, `npm run db:migrate`, `npm run db:seed`, `npm run db:studio`, `npm run db:generate`.
+- Database: `npm run db:push`, `npm run db:migrate`, `npm run db:deploy`, `npm run db:seed`, `npm run db:studio`, `npm run db:generate`.
 
 ### Notes
 
-- Database is **SQLite** (`DATABASE_URL="file:./dev.db"`, file created by `npm run db:push`). `SESSION_SECRET` must be set in `.env`.
-- SQLite has no native enums, `Decimal`, or `mode: "insensitive"`: statuses/roles/units are `String`, money is `Float`. Keep this in mind when adding fields/queries.
+- Database is **PostgreSQL** (`DATABASE_URL` is a `postgresql://...` connection string, e.g. Neon/Supabase/Vercel Postgres). `SESSION_SECRET` must be set in `.env`.
+- Statuses/roles/units are stored as `String` and money as `Float` (kept from the previous SQLite schema for code compatibility). Migrations live in `prisma/migrations`; `npm run build` runs `prisma generate` + `prisma migrate deploy` before `next build`, and `postinstall` runs `prisma generate`.
 - Prisma CLI on Windows may hang when invoked directly through some shells; run it with output redirected to a file if so. Prisma is pinned to 6.19.3 (do not use the `latest` dist-tag).
 - The seed script runs via `node --import tsx prisma/seed.ts` (bare `tsx` is not on PATH when Prisma spawns the seed command).
 - `cacheComponents` is intentionally disabled (`next.config.ts`) to use the classic dynamic rendering model.

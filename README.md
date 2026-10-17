@@ -28,7 +28,7 @@
 ## التقنيات
 
 - [Next.js 16](https://nextjs.org) (App Router، Server Actions) + React 19
-- [Prisma 6](https://www.prisma.io) + **SQLite** (قاعدة بيانات ملفية بدون خادم)
+- [Prisma 6](https://www.prisma.io) + **PostgreSQL**
 - Tailwind CSS v4
 - مصادقة مخصّصة بجلسات JWT (`jose`) + تشفير كلمات المرور (`bcryptjs`) عبر الكوكيز وطبقة DAL
 - التحقق من المدخلات بـ Zod
@@ -37,7 +37,7 @@
 
 ### 1. المتطلبات
 
-- Node.js 20+ فقط. **لا حاجة لأي قاعدة بيانات خارجية** — تُستخدم SQLite (ملف محلي).
+- Node.js 20+، وخادم **PostgreSQL** (محلي أو مستضاف مثل Neon/Supabase/Vercel Postgres).
 
 ### 2. الإعداد
 
@@ -46,10 +46,10 @@ npm install
 cp .env.example .env
 ```
 
-القيم الافتراضية في `.env` كافية للتطوير:
+اضبط القيم في `.env`:
 
 ```
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/bunyan?sslmode=require"
 SESSION_SECRET="<32+ حرف عشوائي>"
 ```
 
@@ -62,11 +62,11 @@ SESSION_SECRET="<32+ حرف عشوائي>"
 
 ```bash
 npm run db:generate   # توليد Prisma Client
-npm run db:push       # إنشاء ملف قاعدة البيانات prisma/dev.db
+npm run db:deploy     # تطبيق الترحيلات على قاعدة البيانات
 npm run db:seed       # إدخال بيانات تجريبية
 ```
 
-يُنشئ `db:push` الملف `prisma/dev.db` تلقائياً (مُستثنى من git).
+تُطبَّق الترحيلات الموجودة في `prisma/migrations` على قاعدة بيانات Postgres المحددة في `DATABASE_URL`.
 
 ### 4. التشغيل
 
@@ -94,6 +94,7 @@ npm run dev
 | `npm run lint`       | ESLint                                  |
 | `npm run db:push`    | مزامنة المخطط مع قاعدة البيانات         |
 | `npm run db:migrate` | إنشاء ترحيل جديد                        |
+| `npm run db:deploy`  | تطبيق الترحيلات في الإنتاج              |
 | `npm run db:seed`    | البيانات التجريبية                      |
 | `npm run db:studio`  | Prisma Studio                           |
 
@@ -101,9 +102,9 @@ npm run dev
 
 ```
 prisma/
-  schema.prisma        # نماذج البيانات (SQLite)
+  schema.prisma        # نماذج البيانات (PostgreSQL)
+  migrations/          # الترحيلات
   seed.ts              # بيانات تجريبية
-  dev.db               # ملف قاعدة البيانات (يُنشأ محلياً، مستثنى من git)
 src/
   app/                 # الصفحات (App Router)
     materials/         # الكتالوج وتفاصيل المادة
@@ -119,20 +120,20 @@ src/
   proxy.ts             # حماية المسارات (Middleware)
 ```
 
-## ملاحظات حول SQLite
+## ملاحظات حول قاعدة البيانات
 
-SQLite لا يدعم أنواع `enum` ولا النوع `Decimal` ولا مرشّح `mode: "insensitive"`، لذلك في
-`schema.prisma` تُخزَّن الحالات/الأدوار/الوحدات كسلاسل نصية (`String`) والمبالغ كـ `Float`.
+تُخزَّن الحالات/الأدوار/الوحدات كسلاسل نصية (`String`) والمبالغ كـ `Float` (kept من مخطط SQLite
+السابق للتوافق مع الكود). الترحيلات في `prisma/migrations`، ويشغّل `npm run build` الأمرين
+`prisma generate` و`prisma migrate deploy` قبل `next build`.
 
-### الترقية إلى PostgreSQL
+### الترقية إلى الأنواع الأصلية
 
-1. غيّر في `prisma/schema.prisma`: `provider = "postgresql"`.
-2. أعِد أنواع `enum` إن رغبت، واستخدم `Decimal @db.Decimal(12,2)` للمبالغ، وأضِف
-   `mode: "insensitive"` في البحث.
-3. اضبط `DATABASE_URL` لخادم Postgres ثم شغّل `npm run db:push && npm run db:seed`.
+1. يمكن إعادة أنواع `enum` للـ statuses/roles/units و`Decimal @db.Decimal(12,2)` للمبالغ.
+2. أضِف `mode: "insensitive"` في البحث إذا رغبت.
+3. أنشئ ترحيلاً جديداً بـ `npm run db:migrate` بعد تعديل المخطط.
 
 ## النشر
 
-- اضبط `DATABASE_URL` (SQLite أو Postgres) و`SESSION_SECRET` في بيئة الإنتاج.
+- اضبط `DATABASE_URL` (رابط Postgres) و`SESSION_SECRET` في بيئة الإنتاج.
 - شغّل `npm run build` ثم `npm run start`.
-- يُنصح بتشغيل الترحيلات (`prisma migrate deploy`) ضمن خط النشر.
+- يتولى `npm run build` تطبيق الترحيلات (`prisma migrate deploy`) تلقائياً.
