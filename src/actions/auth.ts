@@ -15,6 +15,10 @@ import { slugify } from "@/lib/format";
 import { type Role } from "@/lib/constants";
 import { type ActionState, toFieldErrors } from "@/lib/action-state";
 
+// A valid bcrypt hash used only to equalize login timing for unknown emails.
+const DUMMY_PASSWORD_HASH =
+  "$2b$10$xeSyvgBg8gfvyu2KRxwlp.w/KD//mK0pCtjNlh7BTiXoWmuVKA7hu";
+
 export async function registerCustomer(
   _prev: ActionState,
   formData: FormData,
@@ -138,7 +142,13 @@ export async function login(
   const { email, password } = parsed.data;
 
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !(await verifyPassword(password, user.passwordHash))) {
+  // Always run a bcrypt comparison so response time does not reveal whether the
+  // email exists (mitigates user enumeration).
+  const valid = await verifyPassword(
+    password,
+    user?.passwordHash ?? DUMMY_PASSWORD_HASH,
+  );
+  if (!user || !valid) {
     return { error: "البريد الإلكتروني أو كلمة المرور غير صحيحة" };
   }
 

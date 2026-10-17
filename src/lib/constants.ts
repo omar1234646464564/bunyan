@@ -125,6 +125,22 @@ export const ORDER_STATUS_FLOW = [
   "DELIVERED",
 ] as const;
 
+// Forward-only progression allowed for suppliers (and admins) once an order is
+// accepted. Terminal states (DELIVERED, CANCELLED) have no next status.
+export const ORDER_STATUS_NEXT: Record<string, string> = {
+  CONFIRMED: "PROCESSING",
+  PROCESSING: "SHIPPED",
+  SHIPPED: "DELIVERED",
+};
+
+// Statuses from which an admin may still cancel an order.
+export const ORDER_STATUS_CANCELLABLE = [
+  "AWAITING_SUPPLIER",
+  "CONFIRMED",
+  "PROCESSING",
+  "SHIPPED",
+];
+
 export const UNIT_LABELS: Record<string, string> = {
   BAG: "كيس",
   TON: "طن",

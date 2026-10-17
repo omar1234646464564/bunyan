@@ -22,7 +22,12 @@ import { OrderTimeline } from "@/components/order-timeline";
 import { OrderItems } from "@/components/order-items";
 import { MessageThread } from "@/components/message-thread";
 import { MessageForm } from "@/components/forms/message-form";
-import { ORDER_STATUS_FLOW, ORDER_STATUS_LABELS, UNIT_LABELS } from "@/lib/constants";
+import {
+  ORDER_STATUS_NEXT,
+  ORDER_STATUS_CANCELLABLE,
+  ORDER_STATUS_LABELS,
+  UNIT_LABELS,
+} from "@/lib/constants";
 import { formatDate, formatSAR, toNumber } from "@/lib/format";
 
 export const metadata = { title: "تفاصيل الطلب" };
@@ -56,16 +61,19 @@ export default async function AdminOrderDetailPage({
   });
 
   const materials = await prisma.material.findMany({
-    where: { isActive: true },
+    where: {
+      isActive: true,
+      supplier: { status: "APPROVED" },
+      ...(order.supplierId ? { supplierId: order.supplierId } : {}),
+    },
     orderBy: { name: "asc" },
     select: { id: true, name: true, unit: true },
   });
 
   const editable = order.status === "AWAITING_SUPPLIER";
   const canAccept = Boolean(order.supplierId) && order.items.length > 0;
-  const adminStatusOptions = ORDER_STATUS_FLOW.filter(
-    (status) => status !== "AWAITING_SUPPLIER" && status !== "CONFIRMED",
-  );
+  const nextStatus = ORDER_STATUS_NEXT[order.status];
+  const canCancel = ORDER_STATUS_CANCELLABLE.includes(order.status);
 
   const sendAction = sendMessage.bind(null, order.id);
 
@@ -116,11 +124,13 @@ export default async function AdminOrderDetailPage({
                 >
                   عرض المنشأة
                 </Link>
-                <form action={releaseSupplier.bind(null, order.id)}>
-                  <SubmitButton variant="ghost" size="sm" pendingText="...">
-                    إلغاء التعيين
-                  </SubmitButton>
-                </form>
+                {order.status === "AWAITING_SUPPLIER" ? (
+                  <form action={releaseSupplier.bind(null, order.id)}>
+                    <SubmitButton variant="ghost" size="sm" pendingText="...">
+                      إلغاء التعيين
+                    </SubmitButton>
+                  </form>
+                ) : null}
               </div>
             </div>
           ) : (
@@ -182,26 +192,26 @@ export default async function AdminOrderDetailPage({
           </CardHeader>
           <CardBody>
             <div className="flex flex-wrap gap-2">
-              {adminStatusOptions.map((status) => (
+              {nextStatus ? (
                 <form
-                  key={status}
-                  action={updateOrderStatus.bind(null, order.id, status)}
+                  action={updateOrderStatus.bind(null, order.id, nextStatus)}
                 >
-                  <SubmitButton
-                    variant={order.status === status ? "primary" : "outline"}
-                    size="sm"
-                    pendingText="..."
-                  >
-                    {ORDER_STATUS_LABELS[status]}
+                  <SubmitButton pendingText="...">
+                    {ORDER_STATUS_LABELS[nextStatus]}
                   </SubmitButton>
                 </form>
-              ))}
-              {order.status !== "CANCELLED" ? (
+              ) : null}
+              {canCancel ? (
                 <form action={updateOrderStatus.bind(null, order.id, "CANCELLED")}>
                   <SubmitButton variant="danger" size="sm" pendingText="...">
                     إلغاء
                   </SubmitButton>
                 </form>
+              ) : null}
+              {!nextStatus && !canCancel ? (
+                <p className="text-sm text-zinc-500">
+                  لا توجد إجراءات متاحة لهذا الطلب.
+                </p>
               ) : null}
             </div>
           </CardBody>

@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/dal";
-import { type ActionState } from "@/lib/action-state";
+import { messageSchema } from "@/lib/validation";
+import { type ActionState, toFieldErrors } from "@/lib/action-state";
 
 export async function sendMessage(
   orderId: string,
@@ -11,8 +12,10 @@ export async function sendMessage(
   formData: FormData,
 ): Promise<ActionState> {
   const user = await requireUser();
-  const body = String(formData.get("body") ?? "").trim();
-  if (!body) return { fieldErrors: { body: ["الرسالة فارغة"] } };
+
+  const parsed = messageSchema.safeParse({ body: formData.get("body") ?? "" });
+  if (!parsed.success) return { fieldErrors: toFieldErrors(parsed.error.issues) };
+  const body = parsed.data.body;
 
   const order = await prisma.order.findUnique({
     where: { id: orderId },

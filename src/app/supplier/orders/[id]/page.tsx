@@ -10,7 +10,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import { OrderStatusBadge } from "@/components/status-badge";
 import { OrderTimeline } from "@/components/order-timeline";
 import { OrderItems } from "@/components/order-items";
-import { ORDER_STATUS_FLOW, ORDER_STATUS_LABELS } from "@/lib/constants";
+import { ORDER_STATUS_NEXT, ORDER_STATUS_LABELS } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 
 export const metadata = { title: "تفاصيل الطلب" };
@@ -35,9 +35,7 @@ export default async function SupplierOrderDetailPage({
 
   if (!order) notFound();
 
-  const statusOptions = ORDER_STATUS_FLOW.filter(
-    (status) => status !== "AWAITING_SUPPLIER" && status !== "CONFIRMED",
-  );
+  const nextStatus = ORDER_STATUS_NEXT[order.status];
 
   return (
     <div>
@@ -66,29 +64,17 @@ export default async function SupplierOrderDetailPage({
           <CardTitle>تحديث حالة الطلب</CardTitle>
         </CardHeader>
         <CardBody>
-          <div className="flex flex-wrap gap-2">
-            {statusOptions.map((status) => (
-              <form
-                key={status}
-                action={updateOrderStatus.bind(null, order.id, status)}
-              >
-                <SubmitButton
-                  variant={order.status === status ? "primary" : "outline"}
-                  size="sm"
-                  pendingText="..."
-                >
-                  {ORDER_STATUS_LABELS[status]}
-                </SubmitButton>
-              </form>
-            ))}
-            {order.status !== "CANCELLED" ? (
-              <form action={updateOrderStatus.bind(null, order.id, "CANCELLED")}>
-                <SubmitButton variant="danger" size="sm" pendingText="...">
-                  إلغاء
-                </SubmitButton>
-              </form>
-            ) : null}
-          </div>
+          {nextStatus ? (
+            <form action={updateOrderStatus.bind(null, order.id, nextStatus)}>
+              <SubmitButton pendingText="...">
+                {ORDER_STATUS_LABELS[nextStatus]}
+              </SubmitButton>
+            </form>
+          ) : (
+            <p className="text-sm text-zinc-500">
+              لا توجد إجراءات متاحة لهذا الطلب.
+            </p>
+          )}
         </CardBody>
       </Card>
 

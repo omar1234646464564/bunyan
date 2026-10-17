@@ -1,5 +1,6 @@
 "use server";
 
+import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth/dal";
@@ -32,24 +33,34 @@ export async function createReview(
     return { error: "لم يتم تعيين مورد لهذا الطلب بعد" };
   }
 
-  await prisma.$transaction([
-    prisma.review.create({
-      data: {
-        orderId,
-        supplierId: order.supplierId,
-        customerId: user.id,
-        rating: parsed.data.rating,
-        comment: parsed.data.comment || null,
-      },
-    }),
-    prisma.supplierProfile.update({
-      where: { id: order.supplierId },
-      data: {
-        ratingSum: { increment: parsed.data.rating },
-        ratingCount: { increment: 1 },
-      },
-    }),
-  ]);
+  try {
+    await prisma.$transaction([
+      prisma.review.create({
+        data: {
+          orderId,
+          supplierId: order.supplierId,
+          customerId: user.id,
+          rating: parsed.data.rating,
+          comment: parsed.data.comment || null,
+        },
+      }),
+      prisma.supplierProfile.update({
+        where: { id: order.supplierId },
+        data: {
+          ratingSum: { increment: parsed.data.rating },
+          ratingCount: { increment: 1 },
+        },
+      }),
+    ]);
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      return { error: "تم تقييم هذا الطلب مسبقاً" };
+    }
+    throw error;
+  }
 
   revalidatePath(`/dashboard/orders/${orderId}`);
   revalidatePath("/suppliers");

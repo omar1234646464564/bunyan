@@ -30,6 +30,9 @@ export async function createMaterial(
   const user = await requireRole("SUPPLIER");
   const supplier = user.supplier;
   if (!supplier) return { error: "تعذّر العثور على ملف المنشأة" };
+  if (supplier.status !== "APPROVED") {
+    return { error: "حساب المنشأة غير معتمد. بانتظار موافقة الإدارة." };
+  }
 
   const parsed = parseMaterial(formData);
   if (!parsed.success) return { fieldErrors: toFieldErrors(parsed.error.issues) };
@@ -38,6 +41,11 @@ export async function createMaterial(
   if (!UNITS.includes(d.unit)) {
     return { fieldErrors: { unit: ["وحدة قياس غير صالحة"] } };
   }
+  const category = await prisma.category.findUnique({
+    where: { id: d.categoryId },
+    select: { id: true },
+  });
+  if (!category) return { fieldErrors: { categoryId: ["التصنيف غير موجود"] } };
 
   await prisma.material.create({
     data: {
@@ -68,6 +76,9 @@ export async function updateMaterial(
   const user = await requireRole("SUPPLIER");
   const supplier = user.supplier;
   if (!supplier) return { error: "تعذّر العثور على ملف المنشأة" };
+  if (supplier.status !== "APPROVED") {
+    return { error: "حساب المنشأة غير معتمد. بانتظار موافقة الإدارة." };
+  }
 
   const owned = await prisma.material.findFirst({
     where: { id, supplierId: supplier.id },
@@ -81,6 +92,11 @@ export async function updateMaterial(
   if (!UNITS.includes(d.unit)) {
     return { fieldErrors: { unit: ["وحدة قياس غير صالحة"] } };
   }
+  const category = await prisma.category.findUnique({
+    where: { id: d.categoryId },
+    select: { id: true },
+  });
+  if (!category) return { fieldErrors: { categoryId: ["التصنيف غير موجود"] } };
 
   await prisma.material.update({
     where: { id },

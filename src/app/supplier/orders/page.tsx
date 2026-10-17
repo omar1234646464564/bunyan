@@ -33,9 +33,13 @@ export default async function SupplierOrdersPage({
 
   const where: Prisma.OrderWhereInput = {
     supplierId: supplier.id,
-    status: { not: "AWAITING_SUPPLIER" },
+    // Never expose orders that are still awaiting (re)assignment, even when a
+    // status filter is applied.
+    status:
+      status && status !== "AWAITING_SUPPLIER"
+        ? status
+        : { not: "AWAITING_SUPPLIER" },
   };
-  if (status) where.status = status as never;
 
   const [total, orders] = await Promise.all([
     prisma.order.count({ where }),
@@ -67,18 +71,20 @@ export default async function SupplierOrdersPage({
         >
           الكل
         </Link>
-        {Object.entries(ORDER_STATUS_LABELS).map(([key, label]) => (
-          <Link
-            key={key}
-            href={`/supplier/orders?status=${key}`}
-            className={buttonVariants({
-              variant: status === key ? "primary" : "outline",
-              size: "sm",
-            })}
-          >
-            {label}
-          </Link>
-        ))}
+        {Object.entries(ORDER_STATUS_LABELS)
+          .filter(([key]) => key !== "AWAITING_SUPPLIER")
+          .map(([key, label]) => (
+            <Link
+              key={key}
+              href={`/supplier/orders?status=${key}`}
+              className={buttonVariants({
+                variant: status === key ? "primary" : "outline",
+                size: "sm",
+              })}
+            >
+              {label}
+            </Link>
+          ))}
       </div>
 
       <div className="mt-6">
