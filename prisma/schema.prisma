@@ -1,15 +1,16 @@
 // بنيان - بناء منصة تربط موردي مواد البناء بعملاء المقاولات في السعودية
-// Prisma schema for PostgreSQL
+// Prisma schema for SQLite
 //
-// ملاحظة: تُخزَّن الحالات والوحدات كسلاسل نصية (String) وتُخزَّن المبالغ
-// كأرقام عشرية عائمة (Float) للحفاظ على توافق الكود الحالي.
+// ملاحظة: SQLite لا يدعم أنواع enum الأصلية ولا النوع Decimal ولا مرشّح
+// mode: "insensitive"، لذلك تُخزَّن الحالات والوحدات كسلاسل نصية (String)
+// وتُخزَّن المبالغ كأرقام عشرية (Float).
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
