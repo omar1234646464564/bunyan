@@ -107,7 +107,9 @@ prisma/
   seed.ts              # بيانات تجريبية
   dev.db               # ملف قاعدة البيانات (يُنشأ محلياً، مستثنى من git)
 scripts/
+  prisma-sync.mjs      # اختيار مزوّد قاعدة البيانات (SQLite/Postgres) + التوليد
   start.mjs            # نقطة تشغيل الإنتاج (DB push + إنشاء الإدارة + Next)
+  ensure-admin.mjs     # إنشاء حساب الإدارة من متغيّرات البيئة
 Dockerfile             # صورة النشر (قرص دائم على /data)
 src/
   app/                 # الصفحات (App Router)
@@ -129,39 +131,33 @@ src/
 SQLite لا يدعم أنواع `enum` ولا النوع `Decimal` ولا مرشّح `mode: "insensitive"`، لذلك في
 `schema.prisma` تُخزَّن الحالات/الأدوار/الوحدات كسلاسل نصية (`String`) والمبالغ كـ `Float`.
 
-### الترقية إلى PostgreSQL
+### التبديل إلى PostgreSQL
 
-1. غيّر في `prisma/schema.prisma`: `provider = "postgresql"`.
-2. أعِد أنواع `enum` إن رغبت، واستخدم `Decimal @db.Decimal(12,2)` للمبالغ، وأضِف
-   `mode: "insensitive"` في البحث.
-3. اضبط `DATABASE_URL` لخادم Postgres ثم شغّل `npm run db:push && npm run db:seed`.
+لا حاجة لتعديل المخطط يدوياً: ما عليك سوى ضبط `DATABASE_URL` على رابط `postgres://`، وسيختار
+`scripts/prisma-sync.mjs` المزوّد المناسب وينشئ `prisma/schema.generated.prisma` تلقائياً.
+النماذج متطابقة (String/Float فقط) والفرق الوحيد هو المزوّد.
 
 ## النشر
 
-> **مهم:** SQLite يحتاج **قرصاً دائماً**. المنصّات التي تعمل بنظام الملفات المؤقت أو للقراءة
-> فقط (مثل Vercel وNetlify وAWS Lambda) **لا يمكنها تشغيل SQLite**، وستظهر لك رسالة
-> `Unable to open the database file`. استخدم منصة تدعم وحدات التخزين الدائمة (Railway أو
-> Render أو Fly.io أو خادم VPS).
+يدعم التطبيق **وضعين**: SQLite محلياً، وPostgreSQL تلقائياً عندما يكون `DATABASE_URL` رابط
+`postgres://`. اختيار المزوّد يتم وقت البناء عبر `scripts/prisma-sync.mjs`.
 
-### المتطلبات في بيئة الإنتاج
+### أ) Vercel (يتطلب PostgreSQL)
 
-| المتغيّر          | القيمة                                                        |
-| ----------------- | ------------------------------------------------------------ |
-| `DATABASE_URL`    | مسار **مطلق** على القرص الدائم، مثال: `file:/data/bunyan.db` |
-| `SESSION_SECRET`  | نص عشوائي 32+ حرف                                            |
-| `ADMIN_EMAIL`     | (اختياري) لإنشاء حساب إدارة تلقائياً عند الإقلاع             |
-| `ADMIN_PASSWORD`  | (اختياري) كلمة مرور حساب الإدارة                            |
-| `PORT`            | منفذ الخدمة (تضبطه المنصة عادةً)                             |
+> Vercel لا يوفّر قرصاً دائماً، لذلك **لا يمكن تشغيل SQLite هناك** (رسالة
+> `Unable to open the database file`). استخدم قاعدة PostgreSQL مجانية (Vercel Postgres أو Neon).
 
-يقوم `npm run start` تلقائياً عند الإقلاع بـ:
+1. أنشئ قاعدة PostgreSQL من لوحة Vercel (Storage → Postgres) أو من [Neon](https://neon.tech).
+2. أضف متغيّرات البيئة في المشروع:
+   - `DATABASE_URL` = رابط الـ Postgres
+   - `SESSION_SECRET` = نص عشوائي 32+ حرف
+   - `ADMIN_EMAIL` و`ADMIN_PASSWORD` (اختياري) لإنشاء حساب الإدارة تلقائياً عند البناء
+3. ادفع إلى الفرع المرتبط بـ Vercel. عند `npm run build` يقوم التطبيق بـ:
+   `prisma db push` (إنشاء الجداول) ثم إنشاء حساب الإدارة (إن وُجدت المتغيّرات) ثم `next build`.
 
-1. مزامنة مخطط قاعدة البيانات مع ملف SQLite على القرص الدائم (`prisma db push`).
-2. إنشاء حساب الإدارة إذا كانت `ADMIN_EMAIL` و`ADMIN_PASSWORD` مضبوطتين.
-3. تشغيل خادم Next.js.
+### ب) استضافة بقرص دائم (Railway / Render / Fly.io / VPS) مع SQLite
 
-### النشر عبر Docker (Railway / Render / Fly.io / VPS)
-
-المستودع يتضمّن `Dockerfile` جاهزاً.
+المستودع يتضمّن `Dockerfile` جاهزاً يخزّن قاعدة SQLite على مسار `/data`.
 
 ```bash
 # مثال لخادم VPS
@@ -174,18 +170,12 @@ docker run -d --name bunyan -p 3000:3000 \
   bunyan
 ```
 
-- **Railway:** أضف Volume واربطه بالمسار `/data`، ثم اضبط المتغيّرات أعلاه
-  (`DATABASE_URL=file:/data/bunyan.db`).
+- **Railway:** أضف Volume واربطه بـ `/data`، واضبط `DATABASE_URL=file:/data/bunyan.db`.
 - **Render:** أضف Disk بنقطة الربط `/data`، وبنفس المتغيّرات.
-- **Fly.io:** أنشئ Volume (`fly volumes create bunyan_data`) واربطه بـ `/data`.
+- **Fly.io:** أنشئ Volume (`fly volumes create bunyan_data`)، واربطه بـ `/data`.
 
-### النشر بدون Docker (Node مباشر)
-
-```bash
-npm ci
-npm run build
-DATABASE_URL="file:/data/bunyan.db" SESSION_SECRET="..." npm run start
-```
+يقوم `npm run start` عند الإقلاع بـ: مزامنة المخطط (`prisma db push`) → إنشاء الإدارة (اختياري)
+→ تشغيل Next.js. استخدم `npm run start:next` لتجاوز خطوة مزامنة قاعدة البيانات.
 
 > تأكّد أن مسار `DATABASE_URL` داخل مجلد مُثبَّت بشكل دائم (Persistent Volume)، وإلا فُقدت
 > البيانات عند إعادة النشر.

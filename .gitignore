@@ -42,3 +42,6 @@ next-env.d.ts
 prisma/dev.db
 prisma/dev.db-journal
 *.db
+
+# generated postgres schema (created at build time)
+prisma/schema.generated.prisma
