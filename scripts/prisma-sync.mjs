@@ -56,7 +56,7 @@ console.log(
 );
 
 const onVercel = Boolean(process.env.VERCEL);
-if (onVercel && !isPostgres) {
+if (onVercel && shouldPush && !isPostgres) {
   console.error(
     "[prisma-sync] DATABASE_URL must be a postgres:// URL on Vercel. " +
       "SQLite has no persistent disk there, so the deploy would crash at runtime. " +
