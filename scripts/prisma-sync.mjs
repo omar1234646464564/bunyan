@@ -54,9 +54,24 @@ if (isPostgres) {
 console.log(
   `[prisma-sync] provider=${isPostgres ? "postgresql" : "sqlite"} schema=${schemaPath}`,
 );
+
+const onVercel = Boolean(process.env.VERCEL);
+if (onVercel && !isPostgres) {
+  console.error(
+    "[prisma-sync] DATABASE_URL must be a postgres:// URL on Vercel. " +
+      "SQLite has no persistent disk there, so the deploy would crash at runtime. " +
+      "Set DATABASE_URL (Postgres) in the Vercel project's environment variables.",
+  );
+  process.exit(1);
+}
+
 run("npx", ["--no-install", "prisma", "generate", "--schema", schemaPath]);
 
 if (shouldPush && url) {
+  // Managed Postgres providers (Neon, Supabase, Vercel Postgres) expose a pooled
+  // URL for the app and a direct URL for schema changes (DDL). Prefer DIRECT_URL
+  // for `db push` when available.
+  if (process.env.DIRECT_URL) process.env.DATABASE_URL = process.env.DIRECT_URL;
   run("npx", [
     "--no-install",
     "prisma",

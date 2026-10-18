@@ -149,11 +149,15 @@ SQLite لا يدعم أنواع `enum` ولا النوع `Decimal` ولا مرش
 
 1. أنشئ قاعدة PostgreSQL من لوحة Vercel (Storage → Postgres) أو من [Neon](https://neon.tech).
 2. أضف متغيّرات البيئة في المشروع:
-   - `DATABASE_URL` = رابط الـ Postgres
+   - `DATABASE_URL` = رابط الـ Postgres (يُفضّل الرابط المُجمَّع/pooled للتشغيل)
+   - `DIRECT_URL` = الرابط المباشر (غير المُجمَّع) — يُستخدم لإنشاء الجداول وقت البناء (اختياري لكن مُستحسن مع Neon)
    - `SESSION_SECRET` = نص عشوائي 32+ حرف
    - `ADMIN_EMAIL` و`ADMIN_PASSWORD` (اختياري) لإنشاء حساب الإدارة تلقائياً عند البناء
 3. ادفع إلى الفرع المرتبط بـ Vercel. عند `npm run build` يقوم التطبيق بـ:
    `prisma db push` (إنشاء الجداول) ثم إنشاء حساب الإدارة (إن وُجدت المتغيّرات) ثم `next build`.
+
+> ملاحظة: إذا كان `DATABASE_URL` رابطاً مُجمَّعاً (pooler مثل Neon) فقد يفشل `db push`؛ لذلك
+> يدعم التطبيق `DIRECT_URL` ويستخدمه تلقائياً لخطوة إنشاء الجداول.
 
 ### ب) استضافة بقرص دائم (Railway / Render / Fly.io / VPS) مع SQLite
 
