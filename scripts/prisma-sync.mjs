@@ -32,6 +32,18 @@ function run(command, args) {
 // Load .env so local runs pick up DATABASE_URL (Vercel/CI provide it directly).
 loadEnvFile(".env");
 
+// Accept the variable names used by the Vercel Postgres / Neon integration.
+if (!process.env.DATABASE_URL) {
+  const fallback =
+    process.env.POSTGRES_PRISMA_URL ??
+    process.env.POSTGRES_URL ??
+    process.env.POSTGRES_URL_NON_POOLING;
+  if (fallback) process.env.DATABASE_URL = fallback;
+}
+if (!process.env.DIRECT_URL && process.env.POSTGRES_URL_NON_POOLING) {
+  process.env.DIRECT_URL = process.env.POSTGRES_URL_NON_POOLING;
+}
+
 const url = process.env.DATABASE_URL ?? "";
 const isPostgres = /^postgres(ql)?:\/\//i.test(url);
 const shouldPush = process.argv.includes("--push");

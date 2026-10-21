@@ -156,8 +156,10 @@ SQLite لا يدعم أنواع `enum` ولا النوع `Decimal` ولا مرش
 3. ادفع إلى الفرع المرتبط بـ Vercel. عند `npm run build` يقوم التطبيق بـ:
    `prisma db push` (إنشاء الجداول) ثم إنشاء حساب الإدارة (إن وُجدت المتغيّرات) ثم `next build`.
 
-> ملاحظة: إذا كان `DATABASE_URL` رابطاً مُجمَّعاً (pooler مثل Neon) فقد يفشل `db push`؛ لذلك
-> يدعم التطبيق `DIRECT_URL` ويستخدمه تلقائياً لخطوة إنشاء الجداول.
+> ملاحظة: إذا أضفت قاعدة Vercel Postgres/Neon من لوحة Vercel فستُسمّى متغيّراتها
+> `POSTGRES_URL` و`POSTGRES_PRISMA_URL` و`POSTGRES_URL_NON_POOLING` بدل `DATABASE_URL`؛
+> يتعرّف التطبيق عليها تلقائياً ويستخدم `POSTGRES_URL_NON_POOLING` لإنشاء الجداول.
+> تأكّد فقط من ضبط `SESSION_SECRET`.
 
 ### ب) استضافة بقرص دائم (Railway / Render / Fly.io / VPS) مع SQLite
 
