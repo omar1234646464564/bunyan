@@ -77,6 +77,8 @@ export function MaterialForm({
   const [imageError, setImageError] = useState<string | null>(null);
   const [preparing, setPreparing] = useState(false);
   const [removeImage, setRemoveImage] = useState(false);
+  const [pickedFile, setPickedFile] = useState(false);
+  const hasStoredImage = Boolean(defaults?.imageUrl);
 
   async function onPickImage(event: React.ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
@@ -108,6 +110,7 @@ export function MaterialForm({
       }
 
       setPreview(URL.createObjectURL(file));
+      setPickedFile(true);
       setRemoveImage(false);
     } finally {
       setPreparing(false);
@@ -207,26 +210,31 @@ export function MaterialForm({
                 alt="معاينة صورة المنتج"
                 className="h-24 w-24 rounded-xl border border-zinc-200 object-cover"
               />
-              <label className="flex items-center gap-2 text-sm text-zinc-600">
-                <input
-                  type="checkbox"
-                  name="removeImage"
-                  checked={removeImage}
-                  onChange={(event) => {
-                    setRemoveImage(event.currentTarget.checked);
-                    if (event.currentTarget.checked && imageInput.current) {
-                      imageInput.current.value = "";
-                    }
-                  }}
-                  className="h-4 w-4"
-                />
-                إزالة الصورة الحالية
-              </label>
+              {hasStoredImage && !pickedFile ? (
+                <label className="flex items-center gap-2 text-sm text-zinc-600">
+                  <input
+                    type="checkbox"
+                    name="removeImage"
+                    checked={removeImage}
+                    onChange={(event) => {
+                      setRemoveImage(event.currentTarget.checked);
+                      if (event.currentTarget.checked && imageInput.current) {
+                        imageInput.current.value = "";
+                        setPickedFile(false);
+                      }
+                    }}
+                    className="h-4 w-4"
+                  />
+                  إزالة الصورة الحالية
+                </label>
+              ) : (
+                <p className="text-sm text-zinc-500">
+                  صورة جديدة جاهزة للرفع عند الحفظ.
+                </p>
+              )}
             </div>
           ) : removeImage ? (
-            <p className="text-sm text-zinc-500">
-              ستُزال الصورة عند الحفظ.
-            </p>
+            <p className="text-sm text-zinc-500">ستُزال الصورة عند الحفظ.</p>
           ) : null}
 
           <input
