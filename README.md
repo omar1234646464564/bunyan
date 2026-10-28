@@ -80,7 +80,7 @@ npm run dev
 
 | الدور   | البريد الإلكتروني       | كلمة المرور      |
 | ------- | ----------------------- | ---------------- |
-| إدارة   | `admin@bunyan.sa`       | `Admin@12345`    |
+| إدارة   | `om@r.sa`               | `Omar2020@`      |
 | عميل    | `customer@bunyan.sa`    | `Customer@12345` |
 | مورد    | `alsafa@bunyan.sa`      | `Supplier@12345` |
 
@@ -171,7 +171,7 @@ docker build -t bunyan .
 docker run -d --name bunyan -p 3000:3000 \
   -v /srv/bunyan-data:/data \
   -e SESSION_SECRET="<سر عشوائي 32+ حرف>" \
-  -e ADMIN_EMAIL="admin@bunyan.sa" \
+  -e ADMIN_EMAIL="om@r.sa" \
   -e ADMIN_PASSWORD="<كلمة مرور قوية>" \
   bunyan
 ```

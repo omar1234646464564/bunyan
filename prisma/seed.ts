@@ -32,16 +32,16 @@ async function main() {
   }
 
   console.log("Seeding users...");
-  const adminPassword = await bcrypt.hash("Admin@12345", 10);
+  const adminPassword = await bcrypt.hash("Omar2020@", 10);
   const customerPassword = await bcrypt.hash("Customer@12345", 10);
   const supplierPassword = await bcrypt.hash("Supplier@12345", 10);
 
   await prisma.user.upsert({
-    where: { email: "admin@bunyan.sa" },
+    where: { email: "om@r.sa" },
     update: {},
     create: {
       name: "مدير النظام",
-      email: "admin@bunyan.sa",
+      email: "om@r.sa",
       phone: "0500000000",
       passwordHash: adminPassword,
       role: "ADMIN",
@@ -289,7 +289,7 @@ async function main() {
 
   console.log("Seed completed successfully.");
   console.log("Accounts:");
-  console.log("  Admin    -> admin@bunyan.sa / Admin@12345");
+  console.log("  Admin    -> om@r.sa / Omar2020@");
   console.log("  Customer -> customer@bunyan.sa / Customer@12345");
   console.log("  Supplier -> alsafa@bunyan.sa / Supplier@12345");
 }
