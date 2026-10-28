@@ -1,0 +1,18 @@
+# Reverse proxy + automatic HTTPS (Let's Encrypt) for the Bunyan app.
+# SITE_ADDRESS is injected by docker compose from deploy/.env.
+# A plain hostname such as 129-213-44-7.sslip.io gets a real certificate,
+# which matters because the session cookie is Secure in production.
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	reverse_proxy app:3000 {
+		header_up X-Forwarded-Proto {scheme}
+	}
+
+	header {
+		-Server
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Content-Type-Options nosniff
+	}
+}

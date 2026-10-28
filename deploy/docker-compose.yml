@@ -1,0 +1,50 @@
+# Production stack for a single always-free VM (Oracle Cloud, or any Docker host).
+# Run from this directory:  docker compose up -d --build
+#
+# Values come from deploy/.env (created by setup.sh):
+#   SITE_ADDRESS   hostname Caddy serves + gets a TLS certificate for
+#   SESSION_SECRET 32+ char random string
+#   ADMIN_EMAIL / ADMIN_PASSWORD  admin account created on boot
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: bunyan:latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_URL: file:/data/bunyan.db
+      SESSION_SECRET: ${SESSION_SECRET:?SITE_ADDRESS and SESSION_SECRET must be set in deploy/.env}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_NAME: ${ADMIN_NAME:-مدير النظام}
+    volumes:
+      # SQLite database lives here; survives rebuilds and reboots.
+      - bunyan-data:/data
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in deploy/.env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  bunyan-data:
+    name: bunyan-data
+  caddy-data:
+  caddy-config:

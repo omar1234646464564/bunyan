@@ -1,0 +1,7 @@
+# Normalize line endings: Linux scripts and Docker files must stay LF.
+* text=auto
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.mjs text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
