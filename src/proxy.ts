@@ -2,8 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { decryptSession } from "@/lib/auth/token";
 import { SESSION_COOKIE } from "@/lib/constants";
 
-const PROTECTED_PREFIXES = ["/dashboard", "/supplier", "/admin"];
-const AUTH_ROUTES = ["/login", "/register", "/register/supplier"];
+const PROTECTED_PREFIXES = ["/dashboard", "/admin"];
+const AUTH_ROUTES = ["/login", "/register"];
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

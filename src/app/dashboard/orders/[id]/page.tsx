@@ -5,7 +5,6 @@ import { requireUser } from "@/lib/auth/dal";
 import { prisma } from "@/lib/prisma";
 import { cancelOrder } from "@/actions/orders";
 import { sendMessage } from "@/actions/messages";
-import { createReview } from "@/actions/reviews";
 import { Card, CardHeader, CardTitle, CardBody, Badge } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -14,8 +13,6 @@ import { OrderTimeline } from "@/components/order-timeline";
 import { OrderItems } from "@/components/order-items";
 import { MessageThread } from "@/components/message-thread";
 import { MessageForm } from "@/components/forms/message-form";
-import { ReviewForm } from "@/components/forms/review-form";
-import { RatingStars } from "@/components/rating-stars";
 import { formatDate } from "@/lib/format";
 
 export const metadata = { title: "تفاصيل الطلب" };
@@ -33,18 +30,15 @@ export default async function CustomerOrderDetailPage({
     include: {
       items: true,
       messages: {
-        where: { sender: { role: { not: "SUPPLIER" } } },
         include: { sender: { select: { name: true, role: true } } },
         orderBy: { createdAt: "asc" },
       },
-      review: true,
     },
   });
 
   if (!order) notFound();
 
   const sendAction = sendMessage.bind(null, order.id);
-  const reviewAction = createReview.bind(null, order.id);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -65,7 +59,7 @@ export default async function CustomerOrderDetailPage({
             بتاريخ {formatDate(order.createdAt)}
           </p>
         </div>
-        {order.status === "AWAITING_SUPPLIER" ? (
+        {order.status === "PENDING" ? (
           <form action={cancelOrder.bind(null, order.id)}>
             <SubmitButton variant="outline" size="sm" pendingText="...">
               إلغاء الطلب
@@ -96,41 +90,17 @@ export default async function CustomerOrderDetailPage({
 
           <Card>
             <CardHeader>
-              <CardTitle>المحادثة مع فريق بنيان</CardTitle>
+              <CardTitle>المحادثة مع فريق سينوفا</CardTitle>
             </CardHeader>
             <CardBody>
               <MessageThread
                 messages={order.messages}
                 currentUserId={user.id}
-                platformLabel="فريق بنيان"
+                platformLabel="فريق سينوفا"
               />
               <div className="mt-3 border-t border-zinc-100 pt-3">
                 <MessageForm action={sendAction} />
               </div>
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>التقييم</CardTitle>
-            </CardHeader>
-            <CardBody>
-              {order.review ? (
-                <div>
-                  <RatingStars value={order.review.rating} />
-                  {order.review.comment ? (
-                    <p className="mt-2 text-sm text-zinc-600">
-                      {order.review.comment}
-                    </p>
-                  ) : null}
-                </div>
-              ) : order.status === "DELIVERED" && order.supplierId ? (
-                <ReviewForm action={reviewAction} />
-              ) : (
-                <p className="text-sm text-zinc-500">
-                  يمكنك تقييم الخدمة بعد تسليم الطلب.
-                </p>
-              )}
             </CardBody>
           </Card>
         </div>
@@ -142,19 +112,14 @@ export default async function CustomerOrderDetailPage({
             </CardHeader>
             <CardBody className="space-y-3 text-sm">
               <div className="flex items-center gap-2">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-700 text-base font-bold text-white">
-                  ب
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-900 text-base font-bold text-amber-500">
+                  س
                 </span>
-                <span className="font-semibold text-zinc-900">بنيان</span>
+                <span className="font-semibold text-zinc-900">سينوفا</span>
               </div>
               <p className="text-zinc-600">
-                تدير منصة بنيان طلبك وتنسيقه مع الموردين، ويصلك عبر المحادثة أعلاه.
+                يتولى فريق سينوفا تنفيذ طلبك ومتابعته معك عبر المحادثة أعلاه.
               </p>
-              {order.requestedSupplierName ? (
-                <p className="text-xs text-zinc-400">
-                  المادة المطلوبة من: {order.requestedSupplierName}
-                </p>
-              ) : null}
             </CardBody>
           </Card>
 
@@ -193,7 +158,7 @@ export default async function CustomerOrderDetailPage({
             href="/materials"
             className={buttonVariants({ variant: "outline", className: "w-full" })}
           >
-            تصفح مواد أخرى
+            تصفح منتجات أخرى
           </Link>
         </div>
       </div>

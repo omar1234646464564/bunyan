@@ -11,9 +11,7 @@ import { rateLimit, resetRateLimit } from "@/lib/rate-limit";
 import {
   loginSchema,
   registerCustomerSchema,
-  registerSupplierSchema,
 } from "@/lib/validation";
-import { slugify } from "@/lib/format";
 import { type Role } from "@/lib/constants";
 import { type ActionState, toFieldErrors } from "@/lib/action-state";
 
@@ -77,69 +75,6 @@ export async function registerCustomer(
   redirect("/dashboard");
 }
 
-export async function registerSupplier(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
-  const parsed = registerSupplierSchema.safeParse({
-    name: formData.get("name"),
-    email: formData.get("email"),
-    phone: formData.get("phone"),
-    password: formData.get("password"),
-    companyName: formData.get("companyName"),
-    crNumber: formData.get("crNumber") ?? "",
-    vatNumber: formData.get("vatNumber") ?? "",
-    city: formData.get("city"),
-    region: formData.get("region"),
-    description: formData.get("description") ?? "",
-  });
-
-  if (!parsed.success) {
-    return { fieldErrors: toFieldErrors(parsed.error.issues) };
-  }
-
-  const data = parsed.data;
-
-  try {
-    const passwordHash = await hashPassword(data.password);
-    const baseSlug = slugify(data.companyName);
-
-    const user = await prisma.user.create({
-      data: {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        passwordHash,
-        role: "SUPPLIER",
-        supplier: {
-          create: {
-            companyName: data.companyName,
-            slug: `${baseSlug}-${Date.now().toString(36)}`,
-            crNumber: data.crNumber || null,
-            vatNumber: data.vatNumber || null,
-            phone: data.phone,
-            city: data.city,
-            region: data.region,
-            description: data.description || null,
-            status: "PENDING",
-          },
-        },
-      },
-    });
-    await createSession({ userId: user.id, role: "SUPPLIER", name: user.name });
-  } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      return { fieldErrors: { email: ["هذا البريد الإلكتروني مسجل مسبقاً"] } };
-    }
-    return { error: "تعذّر إنشاء الحساب، حاول مرة أخرى" };
-  }
-
-  redirect("/supplier/dashboard");
-}
-
 export async function login(
   _prev: ActionState,
   formData: FormData,
@@ -200,8 +135,6 @@ function dashboardForRole(role: string): string {
   switch (role) {
     case "ADMIN":
       return "/admin";
-    case "SUPPLIER":
-      return "/supplier/dashboard";
     default:
       return "/dashboard";
   }

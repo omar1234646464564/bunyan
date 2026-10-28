@@ -13,7 +13,6 @@ export type MaterialCardData = {
   minOrderQty: number;
   imageUrl?: string | null;
   category?: { name: string } | null;
-  supplier?: { companyName: string; slug: string } | null;
 };
 
 export function MaterialCard({ material }: { material: MaterialCardData }) {
@@ -41,11 +40,6 @@ export function MaterialCard({ material }: { material: MaterialCardData }) {
           <h3 className="mt-1 line-clamp-1 text-sm font-semibold text-zinc-900 group-hover:text-teal-800">
             {material.name}
           </h3>
-          {material.supplier ? (
-            <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500">
-              {material.supplier.companyName}
-            </p>
-          ) : null}
           <div className="mt-3 flex items-end justify-between">
             <div>
               <p className="text-base font-bold text-zinc-900">

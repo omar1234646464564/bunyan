@@ -7,26 +7,7 @@ import { requireRole } from "@/lib/auth/dal";
 import { slugify, calcVat, toNumber } from "@/lib/format";
 import { type ActionState } from "@/lib/action-state";
 
-const STATUSES = ["PENDING", "APPROVED", "REJECTED", "SUSPENDED"];
-
 class OutOfStockError extends Error {}
-
-export async function setSupplierStatus(
-  id: string,
-  status: string,
-): Promise<void> {
-  await requireRole("ADMIN");
-  if (!STATUSES.includes(status)) return;
-
-  await prisma.supplierProfile.update({
-    where: { id },
-    data: { status },
-  });
-
-  revalidatePath("/admin/suppliers");
-  revalidatePath("/suppliers");
-  revalidatePath("/materials");
-}
 
 export async function createCategory(
   _prev: ActionState,
@@ -66,55 +47,6 @@ export async function deleteCategory(id: string): Promise<void> {
   revalidatePath("/categories");
 }
 
-export async function assignSupplier(
-  orderId: string,
-  formData: FormData,
-): Promise<void> {
-  await requireRole("ADMIN");
-  const supplierId = String(formData.get("supplierId") ?? "");
-  if (!supplierId) return;
-
-  const supplier = await prisma.supplierProfile.findUnique({
-    where: { id: supplierId },
-  });
-  if (!supplier || supplier.status !== "APPROVED") return;
-
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order) return;
-  if (order.status !== "AWAITING_SUPPLIER") return;
-  if (order.supplierId) return;
-
-  await prisma.order.update({
-    where: { id: orderId },
-    data: { supplierId, assignedAt: new Date() },
-  });
-
-  revalidatePath("/admin/orders");
-  revalidatePath(`/admin/orders/${orderId}`);
-  revalidatePath("/supplier/orders");
-  revalidatePath(`/dashboard/orders/${orderId}`);
-  revalidatePath("/dashboard/orders");
-}
-
-export async function releaseSupplier(orderId: string): Promise<void> {
-  await requireRole("ADMIN");
-
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order) return;
-  if (order.status !== "AWAITING_SUPPLIER") return;
-
-  await prisma.order.update({
-    where: { id: orderId },
-    data: { supplierId: null, assignedAt: null, status: "AWAITING_SUPPLIER" },
-  });
-
-  revalidatePath("/admin/orders");
-  revalidatePath(`/admin/orders/${orderId}`);
-  revalidatePath("/supplier/orders");
-  revalidatePath(`/dashboard/orders/${orderId}`);
-  revalidatePath("/dashboard/orders");
-}
-
 async function recomputeOrderTotals(
   tx: Prisma.TransactionClient,
   orderId: string,
@@ -138,7 +70,6 @@ function revalidateOrder(orderId: string): void {
   revalidatePath(`/admin/orders/${orderId}`);
   revalidatePath(`/dashboard/orders/${orderId}`);
   revalidatePath("/dashboard/orders");
-  revalidatePath("/supplier/orders");
 }
 
 export async function acceptOrder(orderId: string): Promise<void> {
@@ -146,14 +77,10 @@ export async function acceptOrder(orderId: string): Promise<void> {
 
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    include: {
-      supplier: { select: { status: true } },
-      _count: { select: { items: true } },
-    },
+    include: { _count: { select: { items: true } } },
   });
   if (!order) return;
-  if (order.status !== "AWAITING_SUPPLIER") return;
-  if (!order.supplier || order.supplier.status !== "APPROVED") return;
+  if (order.status !== "PENDING") return;
   if (order._count.items === 0) return;
 
   await prisma.order.update({
@@ -171,18 +98,15 @@ export async function addOrderItem(
   await requireRole("ADMIN");
 
   const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order || order.status !== "AWAITING_SUPPLIER") return;
+  if (!order || order.status !== "PENDING") return;
 
   const materialId = String(formData.get("materialId") ?? "");
   const quantity = Number(formData.get("quantity") ?? 0);
 
   const material = await prisma.material.findUnique({
     where: { id: materialId },
-    include: { supplier: { select: { status: true } } },
   });
   if (!material || !material.isActive) return;
-  if (material.supplier.status !== "APPROVED") return;
-  if (order.supplierId && material.supplierId !== order.supplierId) return;
   if (!Number.isInteger(quantity) || quantity < material.minOrderQty) return;
   if (material.stock !== null && quantity > material.stock) return;
 
@@ -229,7 +153,7 @@ export async function updateOrderItem(
   await requireRole("ADMIN");
 
   const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order || order.status !== "AWAITING_SUPPLIER") return;
+  if (!order || order.status !== "PENDING") return;
 
   const item = await prisma.orderItem.findUnique({ where: { id: itemId } });
   if (!item || item.orderId !== orderId) return;
@@ -293,7 +217,7 @@ export async function removeOrderItem(
   await requireRole("ADMIN");
 
   const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order || order.status !== "AWAITING_SUPPLIER") return;
+  if (!order || order.status !== "PENDING") return;
 
   await prisma.$transaction(async (tx) => {
     const item = await tx.orderItem.findUnique({ where: { id: itemId } });

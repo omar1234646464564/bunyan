@@ -3,7 +3,7 @@ import { Cairo } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { APP_NAME, APP_TAGLINE } from "@/lib/constants";
+import { APP_DESCRIPTION, APP_NAME, APP_TAGLINE } from "@/lib/constants";
 
 const cairo = Cairo({
   variable: "--font-cairo",
@@ -16,8 +16,7 @@ export const metadata: Metadata = {
     default: `${APP_NAME} | ${APP_TAGLINE}`,
     template: `%s | ${APP_NAME}`,
   },
-  description:
-    "بنيان منصة سعودية تربط موردي مواد البناء بعملاء المقاولات والمشاريع: تصفح المواد، اطلب، وتواصل مباشرة مع الموردين.",
+  description: APP_DESCRIPTION,
 };
 
 export const dynamic = "force-dynamic";

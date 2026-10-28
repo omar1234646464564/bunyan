@@ -26,7 +26,7 @@ export function MaterialForm({
   action,
   categories,
   defaults,
-  submitLabel = "حفظ المادة",
+  submitLabel = "حفظ المنتج",
 }: {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   categories: { id: string; name: string }[];
@@ -39,7 +39,7 @@ export function MaterialForm({
     <form action={formAction} className="space-y-4">
       {state.error ? <Alert variant="error">{state.error}</Alert> : null}
 
-      <Field label="اسم المادة" error={state.fieldErrors?.name}>
+      <Field label="اسم المنتج" error={state.fieldErrors?.name}>
         <Input name="name" defaultValue={defaults?.name} required />
       </Field>
 
@@ -110,7 +110,7 @@ export function MaterialForm({
         cityError={state.fieldErrors?.city}
       />
 
-      <Field label="رابط صورة المادة" error={state.fieldErrors?.imageUrl}>
+      <Field label="رابط صورة المنتج" error={state.fieldErrors?.imageUrl}>
         <Input
           name="imageUrl"
           placeholder="https://..."

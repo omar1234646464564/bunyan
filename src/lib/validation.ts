@@ -27,19 +27,6 @@ export const registerCustomerSchema = z.object({
   password: passwordSchema,
 });
 
-export const registerSupplierSchema = z.object({
-  name: z.string().trim().min(2, "اسم المسؤول مطلوب"),
-  email: emailSchema,
-  phone: z.string().trim().regex(saudiPhone, "رقم جوال سعودي غير صالح"),
-  password: passwordSchema,
-  companyName: z.string().trim().min(2, "اسم المنشأة مطلوب"),
-  crNumber: z.string().trim().optional(),
-  vatNumber: z.string().trim().optional(),
-  city: z.string().trim().min(1, "المدينة مطلوبة"),
-  region: z.string().trim().min(1, "المنطقة مطلوبة"),
-  description: z.string().trim().max(1000).optional(),
-});
-
 export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, "كلمة المرور مطلوبة"),
@@ -58,27 +45,10 @@ export const materialSchema = z.object({
   imageUrl: z.string().trim().url("رابط الصورة غير صالح").optional().or(z.literal("")),
 });
 
-export const supplierProfileSchema = z.object({
-  companyName: z.string().trim().min(2, "اسم المنشأة مطلوب"),
-  phone: z.string().trim().optional(),
-  whatsapp: z.string().trim().optional(),
-  city: z.string().trim().min(1, "المدينة مطلوبة"),
-  region: z.string().trim().min(1, "المنطقة مطلوبة"),
-  address: z.string().trim().optional(),
-  description: z.string().trim().max(2000).optional(),
-  logoUrl: z.string().trim().url("رابط الشعار غير صالح").optional().or(z.literal("")),
-});
-
-export const reviewSchema = z.object({
-  rating: z.coerce.number().int().min(1).max(5),
-  comment: z.string().trim().max(1000).optional(),
-});
-
 export const messageSchema = z.object({
   body: z.string().trim().min(1, "الرسالة فارغة").max(2000),
 });
 
 export type RegisterCustomerInput = z.infer<typeof registerCustomerSchema>;
-export type RegisterSupplierInput = z.infer<typeof registerSupplierSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type MaterialInput = z.infer<typeof materialSchema>;

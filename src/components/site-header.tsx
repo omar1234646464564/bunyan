@@ -13,7 +13,7 @@ export async function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
         <Link href="/" className="flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-700 text-white">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-900 text-amber-500">
             <HardHat className="h-5 w-5" />
           </span>
           <span className="flex flex-col leading-tight">
@@ -23,8 +23,7 @@ export async function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
-          <NavLink href="/materials">المواد</NavLink>
-          <NavLink href="/suppliers">الموردون</NavLink>
+          <NavLink href="/materials">المنتجات</NavLink>
           <NavLink href="/categories">التصنيفات</NavLink>
         </nav>
 
@@ -75,13 +74,12 @@ export async function SiteHeader() {
       </div>
 
       <nav className="flex items-center gap-1 overflow-x-auto border-t border-zinc-100 px-4 py-2 md:hidden">
-        <NavLink href="/materials">المواد</NavLink>
-        <NavLink href="/suppliers">الموردون</NavLink>
+        <NavLink href="/materials">المنتجات</NavLink>
         <NavLink href="/categories">التصنيفات</NavLink>
-        {user?.role === "SUPPLIER" ? (
-          <NavLink href="/supplier/materials/new">
+        {user?.role === "ADMIN" ? (
+          <NavLink href="/admin/materials/new">
             <PlusCircle className="ml-1 inline h-4 w-4" />
-            أضف مادة
+            أضف منتج
           </NavLink>
         ) : null}
       </nav>
@@ -93,8 +91,6 @@ function dashboardHref(role: string): string {
   switch (role) {
     case "ADMIN":
       return "/admin";
-    case "SUPPLIER":
-      return "/supplier/dashboard";
     default:
       return "/dashboard";
   }

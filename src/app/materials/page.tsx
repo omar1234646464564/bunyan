@@ -10,7 +10,7 @@ import { Input, Select, Field } from "@/components/ui/fields";
 import { buttonVariants } from "@/components/ui/button";
 import { SAUDI_CITIES } from "@/lib/constants";
 
-export const metadata = { title: "المواد" };
+export const metadata = { title: "المنتجات" };
 
 const PAGE_SIZE = 12;
 
@@ -33,7 +33,6 @@ export default async function MaterialsPage({
 
   const where: Prisma.MaterialWhereInput = {
     isActive: true,
-    supplier: { status: "APPROVED" },
   };
   if (q) where.name = { contains: q };
   if (categorySlug) where.category = { slug: categorySlug };
@@ -57,7 +56,6 @@ export default async function MaterialsPage({
       where,
       include: {
         category: true,
-        supplier: { select: { companyName: true, slug: true } },
       },
       orderBy,
       skip: (page - 1) * PAGE_SIZE,
@@ -72,8 +70,8 @@ export default async function MaterialsPage({
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900">المواد</h1>
-          <p className="mt-1 text-sm text-zinc-500">{total} مادة متاحة</p>
+          <h1 className="text-2xl font-bold text-zinc-900">المنتجات</h1>
+          <p className="mt-1 text-sm text-zinc-500">{total} منتج متاح</p>
         </div>
         <form className="flex items-center gap-2" action="/materials">
           <div className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-3">

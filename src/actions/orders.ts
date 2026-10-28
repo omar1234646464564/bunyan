@@ -29,14 +29,10 @@ export async function createOrder(
 
   const material = await prisma.material.findUnique({
     where: { id: materialId },
-    include: { supplier: true },
   });
 
   if (!material || !material.isActive) {
     return { error: "المادة غير متوفرة حالياً" };
-  }
-  if (material.supplier.status !== "APPROVED") {
-    return { error: "هذا المورد غير معتمد حالياً" };
   }
   if (!Number.isInteger(quantity) || quantity < material.minOrderQty) {
     return {
@@ -89,7 +85,6 @@ export async function createOrder(
         data: {
           number: orderNumber(),
           customerId: user.id,
-          requestedSupplierName: material.supplier.companyName,
           subtotal,
           vat,
           total,
@@ -131,26 +126,19 @@ export async function updateOrderStatus(
   orderId: string,
   status: string,
 ): Promise<void> {
-  const user = await requireRole("SUPPLIER", "ADMIN");
+  await requireRole("ADMIN");
 
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!order) return;
 
   const isCancel = status === "CANCELLED";
 
-  if (user.role === "SUPPLIER") {
-    if (!user.supplier || order.supplierId !== user.supplier.id) return;
-    if (user.supplier.status !== "APPROVED") return;
-    // Suppliers may only advance the order along the forward-only flow.
+  // Admins may advance the flow or cancel an order, but may never set
+  // PENDING/CONFIRMED here (handled by the accept action).
+  if (!isCancel) {
     if (ORDER_STATUS_NEXT[order.status] !== status) return;
-  } else {
-    // Admins may advance the flow or cancel an accepted order, but may never
-    // set AWAITING_SUPPLIER/CONFIRMED here (handled by assign/accept actions).
-    if (!isCancel) {
-      if (ORDER_STATUS_NEXT[order.status] !== status) return;
-    } else if (!ORDER_STATUS_CANCELLABLE.includes(order.status)) {
-      return;
-    }
+  } else if (!ORDER_STATUS_CANCELLABLE.includes(order.status)) {
+    return;
   }
 
   await prisma.$transaction(async (tx) => {
@@ -160,10 +148,8 @@ export async function updateOrderStatus(
     }
   });
 
-  revalidatePath(`/supplier/orders/${orderId}`);
   revalidatePath(`/dashboard/orders/${orderId}`);
   revalidatePath(`/admin/orders/${orderId}`);
-  revalidatePath("/supplier/orders");
   revalidatePath("/dashboard/orders");
   revalidatePath("/admin/orders");
   revalidatePath("/materials");
@@ -174,7 +160,7 @@ export async function cancelOrder(orderId: string): Promise<void> {
 
   const cancelled = await prisma.$transaction(async (tx) => {
     const updated = await tx.order.updateMany({
-      where: { id: orderId, customerId: user.id, status: "AWAITING_SUPPLIER" },
+      where: { id: orderId, customerId: user.id, status: "PENDING" },
       data: { status: "CANCELLED" },
     });
     if (updated.count === 0) return false;

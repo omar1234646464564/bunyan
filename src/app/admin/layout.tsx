@@ -13,12 +13,12 @@ export default async function AdminLayout({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-zinc-900">لوحة الإدارة</h1>
-          <p className="text-sm text-zinc-500">إدارة المنصة والموردين</p>
+          <p className="text-sm text-zinc-500">إدارة المنتجات والطلبات</p>
         </div>
         <nav className="flex flex-wrap items-center gap-1">
           <NavLink href="/admin">نظرة عامة</NavLink>
           <NavLink href="/admin/orders">الطلبات</NavLink>
-          <NavLink href="/admin/suppliers">الموردون</NavLink>
+          <NavLink href="/admin/materials">المنتجات</NavLink>
           <NavLink href="/admin/categories">التصنيفات</NavLink>
         </nav>
       </div>

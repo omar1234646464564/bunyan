@@ -9,7 +9,7 @@ export default function LoginPage() {
       <Card className="p-8">
         <h1 className="text-xl font-bold text-zinc-900">تسجيل الدخول</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          ادخل إلى حسابك لمتابعة الطلبات والتواصل مع الموردين.
+          ادخل إلى حسابك لمتابعة طلباتك والتواصل مع فريقنا.
         </p>
         <div className="mt-6">
           <LoginForm />

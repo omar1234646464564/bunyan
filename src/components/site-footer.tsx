@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { APP_NAME, APP_TAGLINE } from "@/lib/constants";
+import {
+  APP_NAME,
+  APP_TAGLINE,
+  COMPANY_ADDRESS,
+  COMPANY_EMAIL,
+  COMPANY_PHONE,
+  COMPANY_PHONE_DISPLAY,
+} from "@/lib/constants";
 
 export function SiteFooter() {
   return (
@@ -9,7 +16,8 @@ export function SiteFooter() {
           <p className="text-lg font-bold text-zinc-900">{APP_NAME}</p>
           <p className="mt-1 text-sm text-zinc-500">{APP_TAGLINE}</p>
           <p className="mt-3 text-sm text-zinc-500">
-            منصة سعودية تربط موردي مواد البناء بعملاء المقاولات والمشاريع.
+            توريد مواد البناء والحديد والأخشاب للشركات والمشاريع في المملكة
+            العربية السعودية.
           </p>
         </div>
         <div>
@@ -17,12 +25,7 @@ export function SiteFooter() {
           <ul className="mt-3 space-y-2 text-sm text-zinc-600">
             <li>
               <Link href="/materials" className="hover:text-teal-700">
-                المواد
-              </Link>
-            </li>
-            <li>
-              <Link href="/suppliers" className="hover:text-teal-700">
-                الموردون
+                المنتجات
               </Link>
             </li>
             <li>
@@ -30,21 +33,27 @@ export function SiteFooter() {
                 التصنيفات
               </Link>
             </li>
+            <li>
+              <Link href="/register" className="hover:text-teal-700">
+                إنشاء حساب
+              </Link>
+            </li>
           </ul>
         </div>
         <div>
-          <p className="text-sm font-semibold text-zinc-900">للموردين</p>
+          <p className="text-sm font-semibold text-zinc-900">تواصل معنا</p>
           <ul className="mt-3 space-y-2 text-sm text-zinc-600">
             <li>
-              <Link href="/register/supplier" className="hover:text-teal-700">
-                سجّل كمنشأة
-              </Link>
+              <a href={`tel:${COMPANY_PHONE}`} dir="ltr" className="hover:text-teal-700">
+                {COMPANY_PHONE_DISPLAY}
+              </a>
             </li>
             <li>
-              <Link href="/login" className="hover:text-teal-700">
-                دخول الموردين
-              </Link>
+              <a href={`mailto:${COMPANY_EMAIL}`} className="hover:text-teal-700">
+                {COMPANY_EMAIL}
+              </a>
             </li>
+            <li>{COMPANY_ADDRESS}</li>
           </ul>
         </div>
       </div>

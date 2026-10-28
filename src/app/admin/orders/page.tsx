@@ -36,7 +36,6 @@ export default async function AdminOrdersPage({
       where,
       include: {
         customer: { select: { name: true } },
-        supplier: { select: { companyName: true } },
         _count: { select: { items: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -93,11 +92,8 @@ export default async function AdminOrdersPage({
                       <OrderStatusBadge status={order.status} />
                     </p>
                     <p className="mt-1 text-xs text-zinc-500">
-                      {order.customer.name} ·{" "}
-                      {order.supplier
-                        ? order.supplier.companyName
-                        : "بانتظار تعيين مورد"}{" "}
-                      · {order._count.items} مادة · {formatDate(order.createdAt)}
+                      {order.customer.name} · {order._count.items} منتج ·{" "}
+                      {formatDate(order.createdAt)}
                     </p>
                   </div>
                   <span className="shrink-0 text-sm font-bold text-zinc-900">

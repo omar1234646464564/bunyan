@@ -1,15 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MapPin, Package, ShieldCheck, Truck } from "lucide-react";
+import { Mail, MapPin, Package, Phone, ShieldCheck, Truck } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/dal";
 import { Card, Badge } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
-import { RatingStars } from "@/components/rating-stars";
 import { MaterialCard } from "@/components/material-card";
 import { OrderForm } from "@/components/forms/order-form";
 import { formatNumber, formatSAR, toNumber } from "@/lib/format";
-import { UNIT_LABELS } from "@/lib/constants";
+import {
+  APP_NAME,
+  COMPANY_EMAIL,
+  COMPANY_PHONE,
+  COMPANY_PHONE_DISPLAY,
+  UNIT_LABELS,
+} from "@/lib/constants";
 
 export async function generateMetadata({ params }: PageProps<"/materials/[id]">) {
   const { id } = await params;
@@ -17,7 +22,7 @@ export async function generateMetadata({ params }: PageProps<"/materials/[id]">)
     where: { id },
     select: { name: true },
   });
-  return { title: material?.name ?? "مادة غير موجودة" };
+  return { title: material?.name ?? "منتج غير موجود" };
 }
 
 export default async function MaterialDetailPage({
@@ -27,10 +32,7 @@ export default async function MaterialDetailPage({
 
   const material = await prisma.material.findUnique({
     where: { id },
-    include: {
-      category: true,
-      supplier: { include: { user: { select: { phone: true } } } },
-    },
+    include: { category: true },
   });
 
   if (!material) notFound();
@@ -42,25 +44,18 @@ export default async function MaterialDetailPage({
       isActive: true,
       categoryId: material.categoryId,
       id: { not: material.id },
-      supplier: { status: "APPROVED" },
     },
-    include: {
-      category: true,
-      supplier: { select: { companyName: true, slug: true } },
-    },
+    include: { category: true },
     take: 4,
   });
 
-  const supplier = material.supplier;
-  const avg =
-    supplier.ratingCount > 0 ? supplier.ratingSum / supplier.ratingCount : 0;
-  const available = material.isActive && supplier.status === "APPROVED";
+  const available = material.isActive;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <nav className="mb-5 flex flex-wrap items-center gap-2 text-sm text-zinc-500">
         <Link href="/materials" className="hover:text-teal-700">
-          المواد
+          المنتجات
         </Link>
         <span>/</span>
         <Link
@@ -97,10 +92,10 @@ export default async function MaterialDetailPage({
                 </Badge>
                 {available ? (
                   <Badge className="bg-emerald-100 text-emerald-800">
-                    متوفرة
+                    متوفر
                   </Badge>
                 ) : (
-                  <Badge className="bg-red-100 text-red-700">غير متوفرة</Badge>
+                  <Badge className="bg-red-100 text-red-700">غير متوفر</Badge>
                 )}
               </div>
               <h1 className="mt-3 text-2xl font-bold text-zinc-900">
@@ -126,52 +121,31 @@ export default async function MaterialDetailPage({
           </Card>
 
           <Card className="p-6">
-            <h2 className="text-base font-semibold text-zinc-900">عن المورد</h2>
-            <div className="mt-4 flex items-start gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-700 text-lg font-bold text-white">
-                {supplier.companyName.slice(0, 1)}
-              </span>
-              <div className="flex-1">
-                <Link
-                  href={`/suppliers/${supplier.slug}`}
-                  className="font-semibold text-zinc-900 hover:text-teal-700"
-                >
-                  {supplier.companyName}
-                </Link>
-                <div className="mt-1">
-                  <RatingStars value={avg} count={supplier.ratingCount} />
-                </div>
-                <p className="mt-2 flex items-center gap-1 text-sm text-zinc-500">
-                  <MapPin className="h-4 w-4" />
-                  {supplier.city} — {supplier.region}
-                </p>
-              </div>
-            </div>
+            <h2 className="text-base font-semibold text-zinc-900">
+              عن {APP_NAME}
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-zinc-600">
+              {APP_NAME} شركة متخصصة في توريد منتجات الحديد والصلب والأخشاب
+              والشبك والأسوار والأسقف المعدنية، نخدم شركات المقاولات والمشاريع
+              الصناعية في المملكة العربية السعودية بجودة موثوقة وتسليم في الوقت
+              المحدد.
+            </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {supplier.phone ? (
-                <a
-                  href={`tel:${supplier.phone}`}
-                  className={buttonVariants({ variant: "outline", size: "sm" })}
-                >
-                  {supplier.phone}
-                </a>
-              ) : null}
-              {supplier.whatsapp ? (
-                <a
-                  href={`https://wa.me/${supplier.whatsapp.replace(/^0/, "966")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={buttonVariants({ variant: "outline", size: "sm" })}
-                >
-                  واتساب
-                </a>
-              ) : null}
-              <Link
-                href={`/suppliers/${supplier.slug}`}
-                className={buttonVariants({ variant: "ghost", size: "sm" })}
+              <a
+                href={`tel:${COMPANY_PHONE}`}
+                dir="ltr"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
               >
-                عرض الملف
-              </Link>
+                <Phone className="mr-1 h-4 w-4" />
+                {COMPANY_PHONE_DISPLAY}
+              </a>
+              <a
+                href={`mailto:${COMPANY_EMAIL}`}
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                <Mail className="mr-1 h-4 w-4" />
+                {COMPANY_EMAIL}
+              </a>
             </div>
           </Card>
         </div>
@@ -197,23 +171,24 @@ export default async function MaterialDetailPage({
             <div className="mt-4 space-y-2 border-t border-zinc-100 pt-4 text-sm text-zinc-600">
               <p className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-teal-700" />
-                مورد معتمد من <span className="font-medium">بنيان</span>
+                منتج أصلي بجودة مضمونة من{" "}
+                <span className="font-medium">{APP_NAME}</span>
               </p>
               <p className="flex items-center gap-2">
                 <Truck className="h-4 w-4 text-teal-700" />
-                التسليم حسب اتفاقك مع المورد
+                التسليم حسب الاتفاق مع فريقنا
               </p>
             </div>
           </Card>
 
           <Card className="p-6">
             <h2 className="text-base font-semibold text-zinc-900">
-              اطلب هذه المادة
+              اطلب هذا المنتج
             </h2>
             <div className="mt-4">
               {!available ? (
                 <p className="text-sm text-zinc-500">
-                  هذه المادة غير متاحة للطلب حالياً.
+                  هذا المنتج غير متاح للطلب حالياً.
                 </p>
               ) : user?.role === "CUSTOMER" ? (
                 <OrderForm
@@ -232,7 +207,7 @@ export default async function MaterialDetailPage({
               ) : (
                 <div className="space-y-3">
                   <p className="text-sm text-zinc-500">
-                    سجّل الدخول كمستخدم لإرسال طلب إلى المورد.
+                    سجّل الدخول لإرسال طلب لهذا المنتج.
                   </p>
                   <Link
                     href="/login"
@@ -247,7 +222,7 @@ export default async function MaterialDetailPage({
                       className: "w-full",
                     })}
                   >
-                    إنشاء حساب عميل
+                    إنشاء حساب
                   </Link>
                 </div>
               )}
@@ -259,7 +234,7 @@ export default async function MaterialDetailPage({
       {related.length > 0 ? (
         <section className="mt-12">
           <h2 className="text-xl font-bold text-zinc-900">
-            مواد مشابهة من {material.category.name}
+            منتجات مشابهة من {material.category.name}
           </h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {related.map((item) => (

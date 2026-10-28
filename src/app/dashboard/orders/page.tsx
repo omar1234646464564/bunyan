@@ -98,7 +98,7 @@ export default async function CustomerOrdersPage({
                       <OrderStatusBadge status={order.status} />
                     </p>
                     <p className="mt-1 text-xs text-zinc-500">
-                      بنيان · {order._count.items} مادة ·{" "}
+                      سينوفا · {order._count.items} منتج ·{" "}
                       {formatDate(order.createdAt)}
                     </p>
                   </div>

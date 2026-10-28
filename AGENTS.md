@@ -8,7 +8,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-## Project: بنيان (bunyan)
+## Project: سينوفا إنترناشيونال (Sinova International)
 
 Saudi building-materials marketplace. Next.js 16 (App Router, Server Actions) + Prisma 6 + SQLite, Arabic RTL UI, Tailwind v4, custom JWT session auth (`jose` + `bcryptjs`) with a DAL and `src/proxy.ts`.
 
@@ -29,4 +29,4 @@ Saudi building-materials marketplace. Next.js 16 (App Router, Server Actions) + 
 - Prisma CLI on Windows may hang when invoked directly through some shells; run it with output redirected to a file if so. Prisma is pinned to 6.19.3 (do not use the `latest` dist-tag).
 - The seed script runs via `node --import tsx prisma/seed.ts` (bare `tsx` is not on PATH when Prisma spawns the seed command).
 - `cacheComponents` is intentionally disabled (`next.config.ts`) to use the classic dynamic rendering model.
-- Order flow: customers never pick/see a supplier. New orders land on the admin panel with `status: "AWAITING_SUPPLIER"` and `supplierId: null`. Only an admin manages the order items (`addOrderItem`/`updateOrderItem`/`removeOrderItem`, allowed only while `AWAITING_SUPPLIER`; totals are recomputed) and accepts the order (`acceptOrder` → `CONFIRMED`, requires an assigned approved supplier and ≥1 item). Assigning a supplier (`assignSupplier`) no longer confirms. Suppliers only see accepted orders (`status != "AWAITING_SUPPLIER"`) where `supplierId` matches theirs, and may only set `PROCESSING`/`SHIPPED`/`DELIVERED`. Order messaging is customer↔admin only (suppliers don't participate).
+- Order flow: only two roles exist — `ADMIN` and `CUSTOMER` (no suppliers). New orders land on the admin panel with `status: "PENDING"`. Only an admin manages the order items (`addOrderItem`/`updateOrderItem`/`removeOrderItem`, allowed only while `PENDING`; totals are recomputed) and accepts the order (`acceptOrder` → `CONFIRMED`, requires ≥1 item). Admins then advance the order (`PROCESSING`/`SHIPPED`/`DELIVERED`) or cancel it; customers may cancel while `PENDING`. Products are an admin-managed catalogue under `/admin/materials`. Order messaging is customer↔admin only.

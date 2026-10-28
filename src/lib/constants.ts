@@ -1,5 +1,13 @@
-export const APP_NAME = "بنيان";
-export const APP_TAGLINE = "منصة مواد البناء";
+export const APP_NAME = "سينوفا إنترناشيونال";
+export const APP_TAGLINE = "مواد البناء والحديد والأخشاب";
+export const APP_DESCRIPTION =
+  "توريد مواد البناء والحديد والأخشاب والشبك والأسلاك للمقاولات والمشاريع في المملكة العربية السعودية.";
+
+/** بيانات التواصل الرسمية */
+export const COMPANY_PHONE = "+966594426678";
+export const COMPANY_PHONE_DISPLAY = "0594426678";
+export const COMPANY_EMAIL = "info@alrajeh.com.sa";
+export const COMPANY_ADDRESS = "الدمام — حي النابية، المملكة العربية السعودية";
 
 /** ضريبة القيمة المضافة في المملكة العربية السعودية */
 export const VAT_RATE = 0.15;
@@ -81,26 +89,11 @@ export const SAUDI_CITIES: City[] = [
 
 export const ROLE_LABELS: Record<string, string> = {
   CUSTOMER: "عميل",
-  SUPPLIER: "مورد",
   ADMIN: "مدير النظام",
 };
 
-export const SUPPLIER_STATUS_LABELS: Record<string, string> = {
-  PENDING: "قيد المراجعة",
-  APPROVED: "معتمد",
-  REJECTED: "مرفوض",
-  SUSPENDED: "موقوف",
-};
-
-export const SUPPLIER_STATUS_STYLES: Record<string, string> = {
-  PENDING: "bg-amber-100 text-amber-800",
-  APPROVED: "bg-emerald-100 text-emerald-800",
-  REJECTED: "bg-red-100 text-red-800",
-  SUSPENDED: "bg-zinc-200 text-zinc-700",
-};
-
 export const ORDER_STATUS_LABELS: Record<string, string> = {
-  AWAITING_SUPPLIER: "بانتظار تعيين مورد",
+  PENDING: "بانتظار المراجعة",
   CONFIRMED: "مؤكد",
   PROCESSING: "قيد التجهيز",
   SHIPPED: "تم الشحن",
@@ -109,7 +102,7 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
 };
 
 export const ORDER_STATUS_STYLES: Record<string, string> = {
-  AWAITING_SUPPLIER: "bg-amber-100 text-amber-800",
+  PENDING: "bg-amber-100 text-amber-800",
   CONFIRMED: "bg-sky-100 text-sky-800",
   PROCESSING: "bg-indigo-100 text-indigo-800",
   SHIPPED: "bg-violet-100 text-violet-800",
@@ -118,16 +111,17 @@ export const ORDER_STATUS_STYLES: Record<string, string> = {
 };
 
 export const ORDER_STATUS_FLOW = [
-  "AWAITING_SUPPLIER",
+  "PENDING",
   "CONFIRMED",
   "PROCESSING",
   "SHIPPED",
   "DELIVERED",
 ] as const;
 
-// Forward-only progression allowed for suppliers (and admins) once an order is
-// accepted. Terminal states (DELIVERED, CANCELLED) have no next status.
+// Forward-only progression. Terminal states (DELIVERED, CANCELLED) have no next
+// status. Only admins move orders along this flow.
 export const ORDER_STATUS_NEXT: Record<string, string> = {
+  PENDING: "CONFIRMED",
   CONFIRMED: "PROCESSING",
   PROCESSING: "SHIPPED",
   SHIPPED: "DELIVERED",
@@ -135,7 +129,7 @@ export const ORDER_STATUS_NEXT: Record<string, string> = {
 
 // Statuses from which an admin may still cancel an order.
 export const ORDER_STATUS_CANCELLABLE = [
-  "AWAITING_SUPPLIER",
+  "PENDING",
   "CONFIRMED",
   "PROCESSING",
   "SHIPPED",
@@ -158,21 +152,14 @@ export const UNIT_LABELS: Record<string, string> = {
 export const UNITS = Object.keys(UNIT_LABELS);
 
 export const CATEGORY_SEED = [
-  { name: "أسمنت وخرسانة", slug: "cement", icon: "Layers" },
-  { name: "حديد وحدادة", slug: "steel", icon: "Grid3x3" },
-  { name: "ركام وحصى", slug: "aggregate", icon: "Mountain" },
-  { name: "طوب وبلوك", slug: "blocks", icon: "BrickWall" },
-  { name: "بلاط وسيراميك", slug: "tiles", icon: "LayoutGrid" },
-  { name: "جبس وألواح جبسية", slug: "gypsum", icon: "Square" },
-  { name: "دهانات", slug: "paint", icon: "Paintbrush" },
-  { name: "عوازل", slug: "insulation", icon: "Shield" },
-  { name: "أدوات صحية وسباكة", slug: "plumbing", icon: "Droplets" },
-  { name: "كهربائيات", slug: "electrical", icon: "Zap" },
-  { name: "خشب وأبوكسيد", slug: "wood", icon: "TreePine" },
-  { name: "زجاج وألمنيوم", slug: "glass", icon: "PanelsTopLeft" },
-  { name: "مواد بناء متنوعة", slug: "misc", icon: "Package" },
+  { name: "منتجات الحديد والصلب", slug: "steel", icon: "Grid3x3" },
+  { name: "الأخشاب والأبوكسيد", slug: "wood", icon: "TreePine" },
+  { name: "الشبك والأسلاك", slug: "mesh-wire", icon: "Grid2x2" },
+  { name: "الأسوار والأسقف المعدنية", slug: "fencing-roofing", icon: "Fence" },
+  { name: "شبك الأرضيات (الگراتينگ)", slug: "grating", icon: "LayoutGrid" },
+  { name: "مواد ومستلزمات إنشائية", slug: "misc", icon: "Package" },
 ];
 
-export const SESSION_COOKIE = "bunyan_session";
+export const SESSION_COOKIE = "sinova_session";
 
-export type Role = "CUSTOMER" | "SUPPLIER" | "ADMIN";
+export type Role = "CUSTOMER" | "ADMIN";

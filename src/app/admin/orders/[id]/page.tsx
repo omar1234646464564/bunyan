@@ -1,11 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MapPin, Calendar, Phone, User, Truck, CheckCircle2 } from "lucide-react";
+import { MapPin, Calendar, Phone, User, CheckCircle2 } from "lucide-react";
 import { requireRole } from "@/lib/auth/dal";
 import { prisma } from "@/lib/prisma";
 import {
-  assignSupplier,
-  releaseSupplier,
   acceptOrder,
   addOrderItem,
   updateOrderItem,
@@ -14,7 +12,6 @@ import {
 import { updateOrderStatus } from "@/actions/orders";
 import { sendMessage } from "@/actions/messages";
 import { Card, CardHeader, CardTitle, CardBody, Badge } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { Select, Label, Input } from "@/components/ui/fields";
 import { OrderStatusBadge } from "@/components/status-badge";
@@ -44,7 +41,6 @@ export default async function AdminOrderDetailPage({
     include: {
       items: true,
       customer: { select: { name: true, email: true, phone: true } },
-      supplier: { select: { companyName: true, slug: true } },
       messages: {
         include: { sender: { select: { name: true, role: true } } },
         orderBy: { createdAt: "asc" },
@@ -54,24 +50,14 @@ export default async function AdminOrderDetailPage({
 
   if (!order) notFound();
 
-  const suppliers = await prisma.supplierProfile.findMany({
-    where: { status: "APPROVED" },
-    orderBy: { companyName: "asc" },
-    select: { id: true, companyName: true },
-  });
-
   const materials = await prisma.material.findMany({
-    where: {
-      isActive: true,
-      supplier: { status: "APPROVED" },
-      ...(order.supplierId ? { supplierId: order.supplierId } : {}),
-    },
+    where: { isActive: true },
     orderBy: { name: "asc" },
     select: { id: true, name: true, unit: true },
   });
 
-  const editable = order.status === "AWAITING_SUPPLIER";
-  const canAccept = Boolean(order.supplierId) && order.items.length > 0;
+  const editable = order.status === "PENDING";
+  const canAccept = order.items.length > 0;
   const nextStatus = ORDER_STATUS_NEXT[order.status];
   const canCancel = ORDER_STATUS_CANCELLABLE.includes(order.status);
 
@@ -99,70 +85,7 @@ export default async function AdminOrderDetailPage({
         <OrderTimeline status={order.status} />
       </div>
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Truck className="h-4 w-4 text-teal-700" />
-            تعيين المورد
-          </CardTitle>
-        </CardHeader>
-        <CardBody className="space-y-4">
-          {order.supplier ? (
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="text-sm">
-                <p className="font-semibold text-zinc-900">
-                  {order.supplier.companyName}
-                </p>
-                <p className="text-xs text-zinc-500">
-                  تم التعيين {order.assignedAt ? formatDate(order.assignedAt) : ""}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Link
-                  href={`/suppliers/${order.supplier.slug}`}
-                  className={buttonVariants({ variant: "outline", size: "sm" })}
-                >
-                  عرض المنشأة
-                </Link>
-                {order.status === "AWAITING_SUPPLIER" ? (
-                  <form action={releaseSupplier.bind(null, order.id)}>
-                    <SubmitButton variant="ghost" size="sm" pendingText="...">
-                      إلغاء التعيين
-                    </SubmitButton>
-                  </form>
-                ) : null}
-              </div>
-            </div>
-          ) : (
-            <form
-              action={assignSupplier.bind(null, order.id)}
-              className="flex flex-wrap items-end gap-3"
-            >
-              <div className="min-w-56 flex-1">
-                <Label htmlFor="supplierId">اختر مورداً معتمداً</Label>
-                <Select id="supplierId" name="supplierId" defaultValue="">
-                  <option value="" disabled>
-                    — اختر المورد —
-                  </option>
-                  {suppliers.map((supplier) => (
-                    <option key={supplier.id} value={supplier.id}>
-                      {supplier.companyName}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <SubmitButton pendingText="...">تعيين المورد</SubmitButton>
-            </form>
-          )}
-          {order.requestedSupplierName ? (
-            <p className="text-xs text-zinc-400">
-              المادة المطلوبة من: {order.requestedSupplierName}
-            </p>
-          ) : null}
-        </CardBody>
-      </Card>
-
-      {order.status === "AWAITING_SUPPLIER" ? (
+      {order.status === "PENDING" ? (
         <Card className="mt-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -172,11 +95,9 @@ export default async function AdminOrderDetailPage({
           </CardHeader>
           <CardBody className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-zinc-600">
-              {!order.supplierId
-                ? "عيّن مورداً قبل قبول الطلب."
-                : order.items.length === 0
-                  ? "أضف صنفاً واحداً على الأقل قبل القبول."
-                  : "راجع الأصناف ثم اقبل الطلب ليصل إلى المورد."}
+              {order.items.length === 0
+                ? "أضف صنفاً واحداً على الأقل قبل القبول."
+                : "راجع الأصناف ثم اقبل الطلب لبدء التنفيذ."}
             </p>
             {canAccept ? (
               <form action={acceptOrder.bind(null, order.id)}>
@@ -309,7 +230,7 @@ export default async function AdminOrderDetailPage({
                       <Label htmlFor="materialId">إضافة صنف</Label>
                       <Select id="materialId" name="materialId" defaultValue="" required>
                         <option value="" disabled>
-                          — اختر المادة —
+                          — اختر المنتج —
                         </option>
                         {materials.map((material) => (
                           <option key={material.id} value={material.id}>

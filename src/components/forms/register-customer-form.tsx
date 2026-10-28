@@ -57,7 +57,7 @@ export function RegisterCustomerForm() {
         />
       </Field>
 
-      <SubmitButton className="w-full">إنشاء حساب عميل</SubmitButton>
+      <SubmitButton className="w-full">إنشاء الحساب</SubmitButton>
 
       <p className="text-center text-sm text-zinc-500">
         لديك حساب؟{" "}

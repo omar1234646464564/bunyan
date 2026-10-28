@@ -27,12 +27,7 @@ export async function createMaterial(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const user = await requireRole("SUPPLIER");
-  const supplier = user.supplier;
-  if (!supplier) return { error: "تعذّر العثور على ملف المنشأة" };
-  if (supplier.status !== "APPROVED") {
-    return { error: "حساب المنشأة غير معتمد. بانتظار موافقة الإدارة." };
-  }
+  await requireRole("ADMIN");
 
   const parsed = parseMaterial(formData);
   if (!parsed.success) return { fieldErrors: toFieldErrors(parsed.error.issues) };
@@ -49,7 +44,6 @@ export async function createMaterial(
 
   await prisma.material.create({
     data: {
-      supplierId: supplier.id,
       categoryId: d.categoryId,
       name: d.name,
       description: d.description || null,
@@ -63,9 +57,9 @@ export async function createMaterial(
     },
   });
 
-  revalidatePath("/supplier/materials");
+  revalidatePath("/admin/materials");
   revalidatePath("/materials");
-  redirect("/supplier/materials");
+  redirect("/admin/materials");
 }
 
 export async function updateMaterial(
@@ -73,17 +67,10 @@ export async function updateMaterial(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  const user = await requireRole("SUPPLIER");
-  const supplier = user.supplier;
-  if (!supplier) return { error: "تعذّر العثور على ملف المنشأة" };
-  if (supplier.status !== "APPROVED") {
-    return { error: "حساب المنشأة غير معتمد. بانتظار موافقة الإدارة." };
-  }
+  await requireRole("ADMIN");
 
-  const owned = await prisma.material.findFirst({
-    where: { id, supplierId: supplier.id },
-  });
-  if (!owned) return { error: "المادة غير موجودة" };
+  const existing = await prisma.material.findUnique({ where: { id } });
+  if (!existing) return { error: "المادة غير موجودة" };
 
   const parsed = parseMaterial(formData);
   if (!parsed.success) return { fieldErrors: toFieldErrors(parsed.error.issues) };
@@ -114,35 +101,29 @@ export async function updateMaterial(
     },
   });
 
-  revalidatePath("/supplier/materials");
+  revalidatePath("/admin/materials");
   revalidatePath("/materials");
-  redirect("/supplier/materials");
+  redirect("/admin/materials");
 }
 
 export async function toggleMaterialActive(id: string): Promise<void> {
-  const user = await requireRole("SUPPLIER");
-  const supplier = user.supplier;
-  if (!supplier) return;
+  await requireRole("ADMIN");
 
-  const material = await prisma.material.findFirst({
-    where: { id, supplierId: supplier.id },
-  });
+  const material = await prisma.material.findUnique({ where: { id } });
   if (!material) return;
 
   await prisma.material.update({
     where: { id },
     data: { isActive: !material.isActive },
   });
-  revalidatePath("/supplier/materials");
+  revalidatePath("/admin/materials");
   revalidatePath("/materials");
 }
 
 export async function deleteMaterial(id: string): Promise<void> {
-  const user = await requireRole("SUPPLIER");
-  const supplier = user.supplier;
-  if (!supplier) return;
+  await requireRole("ADMIN");
 
-  await prisma.material.deleteMany({ where: { id, supplierId: supplier.id } });
-  revalidatePath("/supplier/materials");
+  await prisma.material.deleteMany({ where: { id } });
+  revalidatePath("/admin/materials");
   revalidatePath("/materials");
 }

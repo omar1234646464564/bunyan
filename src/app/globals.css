@@ -1,8 +1,40 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fafafa;
-  --foreground: #18181b;
+  --background: #f6f8fa;
+  --foreground: #0f2a3d;
+}
+
+/*
+ * Sinova brand palette.
+ * The UI was built with Tailwind's `teal` (primary) and `amber` (accent)
+ * utilities; remapping those ramps here re-themes every screen at once.
+ * Primary: steel navy (#0F2A3D) -> steel blue (#1D6E8C)
+ * Accent:  warm amber (#E0A100)
+ */
+@theme {
+  --color-teal-50: #eef5f9;
+  --color-teal-100: #d9e8f1;
+  --color-teal-200: #b4cfdf;
+  --color-teal-300: #84b0c7;
+  --color-teal-400: #4d8baa;
+  --color-teal-500: #2b6f8f;
+  --color-teal-600: #1d6e8c;
+  --color-teal-700: #164a61;
+  --color-teal-800: #113a4d;
+  --color-teal-900: #0f2a3d;
+  --color-teal-950: #081a26;
+
+  --color-amber-50: #fdf8ea;
+  --color-amber-100: #faeec4;
+  --color-amber-200: #f4dc8c;
+  --color-amber-300: #edc44e;
+  --color-amber-400: #e6b122;
+  --color-amber-500: #e0a100;
+  --color-amber-600: #c28800;
+  --color-amber-700: #9b6a03;
+  --color-amber-800: #7f5308;
+  --color-amber-900: #6b440b;
 }
 
 @theme inline {
@@ -28,6 +60,6 @@ button {
 }
 
 ::selection {
-  background-color: #0f766e;
-  color: white;
+  background-color: var(--color-amber-500);
+  color: #0f2a3d;
 }

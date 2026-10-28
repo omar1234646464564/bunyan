@@ -3,20 +3,187 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "om@r.sa";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "Omar2020@";
+const CUSTOMER_EMAIL = process.env.DEMO_CUSTOMER_EMAIL ?? "customer@sinova.sa";
+const CUSTOMER_PASSWORD = process.env.DEMO_CUSTOMER_PASSWORD ?? "Customer@12345";
+
 const CATEGORIES = [
-  { name: "أسمنت وخرسانة", slug: "cement", icon: "Layers" },
-  { name: "حديد وحدادة", slug: "steel", icon: "Grid3x3" },
-  { name: "ركام وحصى", slug: "aggregate", icon: "Mountain" },
-  { name: "طوب وبلوك", slug: "blocks", icon: "BrickWall" },
-  { name: "بلاط وسيراميك", slug: "tiles", icon: "LayoutGrid" },
-  { name: "جبس وألواح جبسية", slug: "gypsum", icon: "Square" },
-  { name: "دهانات", slug: "paint", icon: "Paintbrush" },
-  { name: "عوازل", slug: "insulation", icon: "Shield" },
-  { name: "أدوات صحية وسباكة", slug: "plumbing", icon: "Droplets" },
-  { name: "كهربائيات", slug: "electrical", icon: "Zap" },
-  { name: "خشب وأبوكسيد", slug: "wood", icon: "TreePine" },
-  { name: "زجاج وألمنيوم", slug: "glass", icon: "PanelsTopLeft" },
-  { name: "مواد بناء متنوعة", slug: "misc", icon: "Package" },
+  { name: "منتجات الحديد والصلب", slug: "steel", icon: "Grid3x3" },
+  { name: "الأخشاب", slug: "wood", icon: "TreePine" },
+  { name: "الشبك والأسلاك", slug: "mesh-wire", icon: "Grid2x2" },
+  { name: "الأسوار والأسقف المعدنية", slug: "fencing-roofing", icon: "Fence" },
+  { name: "شبك الأرضيات (الگراتينگ)", slug: "grating", icon: "LayoutGrid" },
+  { name: "مواد ومستلزمات إنشائية", slug: "misc", icon: "Package" },
+];
+
+type Unit = "BAG" | "TON" | "CUBIC_METER" | "SQUARE_METER" | "METER" | "PIECE" | "ROLL" | "LITER" | "KILOGRAM" | "BOX" | "OTHER";
+
+const MATERIALS: {
+  category: string;
+  name: string;
+  unit: Unit;
+  price: number;
+  minOrderQty: number;
+  stock: number | null;
+  city: string;
+  region: string;
+  description: string;
+}[] = [
+  {
+    category: "steel",
+    name: "حديد تسليح 12 ملم — طول 12 م",
+    unit: "TON",
+    price: 2650,
+    minOrderQty: 2,
+    stock: 180,
+    city: "الدمام",
+    region: "المنطقة الشرقية",
+    description: "حديد تسليح عالي المقاومة مطابق للمواصفات السعودية، أطوال 12 متر.",
+  },
+  {
+    category: "steel",
+    name: "حديد تسليح 16 ملم — طول 12 م",
+    unit: "TON",
+    price: 2680,
+    minOrderQty: 2,
+    stock: 140,
+    city: "الدمام",
+    region: "المنطقة الشرقية",
+    description: "حديد تسليح عالي المقاومة للاستخدامات الإنشائية، أطوال 12 متر.",
+  },
+  {
+    category: "steel",
+    name: "مواسير حديد مجلفن 2 بوصة",
+    unit: "METER",
+    price: 38,
+    minOrderQty: 20,
+    stock: 900,
+    city: "الدمام",
+    region: "المنطقة الشرقية",
+    description: "مواسير حديد مجلفن مقاومة للصدأ للاستخدامات الإنشائية والصناعية.",
+  },
+  {
+    category: "steel",
+    name: "كمرات حديد H-Beam",
+    unit: "TON",
+    price: 3150,
+    minOrderQty: 1,
+    stock: 60,
+    city: "الدمام",
+    region: "المنطقة الشرقية",
+    description: "كمرات حديد عالية التحمل للهياكل الحاملة والمنشآت الصناعية.",
+  },
+  {
+    category: "steel",
+    name: "ألواح صاج مجلفن 1 ملم",
+    unit: "SQUARE_METER",
+    price: 46,
+    minOrderQty: 25,
+    stock: 1200,
+    city: "الدمام",
+    region: "المنطقة الشرقية",
+    description: "ألواح صاج مجلفن متعددة الاستخدامات في التغطية والتصنيع.",
+  },
+  {
+    category: "wood",
+    name: "خشب صلب 2×4 بوصة — طول 4 م",
+    unit: "PIECE",
+    price: 34,
+    minOrderQty: 20,
+    stock: 800,
+    city: "الدمام",
+    region: "المنطقة الشرقية",
+    description: "خشب صلب معروف بقوته ومتانته، مناسب للهياكل الحاملة وأعمال النجارة.",
+  },
+  {
+    category: "wood",
+    name: "خشب صلب 2×6 بوصة — طول 4 م",
+    unit: "PIECE",
+    price: 52,
+    minOrderQty: 15,
+    stock: 600,
+    city: "الدمام",
+    region: "المنطقة الشرقية",
+    description: "خشب صلب عالي الجودة لأعمال البناء والنجارة الدقيقة.",
+  },
+  {
+    category: "wood",
+    name: "خشب صلب 4×4 بوصة — طول 4 م",
+    unit: "PIECE",
+    price: 68,
+    minOrderQty: 10,
+    stock: 400,
+    city: "الدمام",
+    region: "المنطقة الشرقية",
+    description: "خشب صلب بأبعاد كبيرة للاستخدامات الإنشائية الثقيلة.",
+  },
+  {
+    category: "mesh-wire",
+    name: "شبك تسليح ملحوم 6 ملم",
+    unit: "SQUARE_METER",
+    price: 24,
+    minOrderQty: 30,
+    stock: 2500,
+    city: "الدمام",
+    region: "المنطقة الشرقية",
+    description: "شبك حديدي ملحوم لتسليح الأسقف والأرضيات الخرسانية.",
+  },
+  {
+    category: "mesh-wire",
+    name: "سلك ربط مجلفن 1.5 ملم",
+    unit: "KILOGRAM",
+    price: 9.5,
+    minOrderQty: 50,
+    stock: 3000,
+    city: "الدمام",
+    region: "المنطقة الشرقية",
+    description: "سلك ربط مجلفن عالي المرونة لأعمال التسليح والربط.",
+  },
+  {
+    category: "fencing-roofing",
+    name: "أسوار شبك مجلفن — ارتفاع 2 م",
+    unit: "METER",
+    price: 78,
+    minOrderQty: 10,
+    stock: 1500,
+    city: "الدمام",
+    region: "المنطقة الشرقية",
+    description: "أسوار شبكية مجلفنة للحماية والتسييج، مقاومة للصدأ.",
+  },
+  {
+    category: "fencing-roofing",
+    name: "ألواح تسقيف معدنية معزولة",
+    unit: "SQUARE_METER",
+    price: 92,
+    minOrderQty: 20,
+    stock: 900,
+    city: "الدمام",
+    region: "المنطقة الشرقية",
+    description: "ألواح تسقيف معدنية معزولة حرارياً ومقاومة للعوامل الجوية.",
+  },
+  {
+    category: "grating",
+    name: "شبك أرضيات مجلفن 30×100 سم",
+    unit: "PIECE",
+    price: 145,
+    minOrderQty: 5,
+    stock: 350,
+    city: "الدمام",
+    region: "المنطقة الشرقية",
+    description: "گراتينگ صناعي مجلفن للسلامة والتصريف في المنشآت الصناعية.",
+  },
+  {
+    category: "misc",
+    name: "مسامير تثبيت ثقيلة",
+    unit: "BOX",
+    price: 28,
+    minOrderQty: 10,
+    stock: 500,
+    city: "الدمام",
+    region: "المنطقة الشرقية",
+    description: "مسامير تثبيت عالية التحمّل للاستخدامات الإنشائية والصناعية.",
+  },
 ];
 
 async function main() {
@@ -32,199 +199,46 @@ async function main() {
   }
 
   console.log("Seeding users...");
-  const adminPassword = await bcrypt.hash("Omar2020@", 10);
-  const customerPassword = await bcrypt.hash("Customer@12345", 10);
-  const supplierPassword = await bcrypt.hash("Supplier@12345", 10);
+  const adminPasswordHash = await bcrypt.hash(ADMIN_PASSWORD, 10);
+  const customerPasswordHash = await bcrypt.hash(CUSTOMER_PASSWORD, 10);
 
   await prisma.user.upsert({
-    where: { email: "om@r.sa" },
-    update: {},
+    where: { email: ADMIN_EMAIL },
+    update: { role: "ADMIN", passwordHash: adminPasswordHash },
     create: {
       name: "مدير النظام",
-      email: "om@r.sa",
-      phone: "0500000000",
-      passwordHash: adminPassword,
+      email: ADMIN_EMAIL,
+      phone: "0594426678",
+      passwordHash: adminPasswordHash,
       role: "ADMIN",
     },
   });
 
   await prisma.user.upsert({
-    where: { email: "customer@bunyan.sa" },
+    where: { email: CUSTOMER_EMAIL },
     update: {},
     create: {
       name: "عبدالله المقاول",
-      email: "customer@bunyan.sa",
+      email: CUSTOMER_EMAIL,
       phone: "0551111111",
-      city: "الرياض",
-      passwordHash: customerPassword,
+      city: "الدمام",
+      passwordHash: customerPasswordHash,
       role: "CUSTOMER",
     },
   });
 
-  console.log("Seeding suppliers...");
-  const suppliers = [
-    {
-      email: "alsafa@bunyan.sa",
-      ownerName: "خالد الصفا",
-      companyName: "مؤسسة الصفا لمواد البناء",
-      slug: "alsafa",
-      city: "الرياض",
-      region: "الرياض",
-      description:
-        "توريد الأسمنت والحديد والركام لمشاريع المقاولات في المنطقة الوسطى. خبرة أكثر من 15 عاماً.",
-    },
-    {
-      email: "modern@bunyan.sa",
-      ownerName: "سعيد الحديثي",
-      companyName: "شركة البناء الحديث",
-      slug: "modern-building",
-      city: "جدة",
-      region: "مكة المكرمة",
-      description:
-        "متخصصون في البلاط والسيراميك والأدوات الصحية والدهانات بأفضل الأسعار.",
-    },
-    {
-      email: "sharq@bunyan.sa",
-      ownerName: "ماجد الشرقي",
-      companyName: "مؤسسة الشرق للعوازل والجبس",
-      slug: "sharq-insulation",
-      city: "الدمام",
-      region: "المنطقة الشرقية",
-      description: "عوازل مائية وحرارية وألواح جبسية معتمدة لمشاريع البناء.",
-    },
-  ];
-
-  for (const supplier of suppliers) {
-    const existing = await prisma.user.findUnique({
-      where: { email: supplier.email },
-    });
-    if (existing) continue;
-
-    await prisma.user.create({
-      data: {
-        name: supplier.ownerName,
-        email: supplier.email,
-        phone: "0562222222",
-        passwordHash: supplierPassword,
-        role: "SUPPLIER",
-        supplier: {
-          create: {
-            companyName: supplier.companyName,
-            slug: supplier.slug,
-            city: supplier.city,
-            region: supplier.region,
-            description: supplier.description,
-            phone: "0562222222",
-            whatsapp: "0562222222",
-            status: "APPROVED",
-            crNumber: "1010000001",
-          },
-        },
-      },
-    });
-  }
-
-  const supplierProfiles = await prisma.supplierProfile.findMany();
-  const supplierIdBySlug = new Map(supplierProfiles.map((s) => [s.slug, s.id]));
-
   console.log("Seeding materials...");
-  const materials = [
-    {
-      supplier: "alsafa",
-      category: "cement",
-      name: "أسمنت بورتلاندي 50 كجم",
-      unit: "BAG" as const,
-      price: 14.5,
-      minOrderQty: 100,
-      stock: 5000,
-      description: "أسمنت بورتلاند عادي مطابق للمواصفات السعودية، عبوة 50 كجم.",
-    },
-    {
-      supplier: "alsafa",
-      category: "steel",
-      name: "حديد تسليح 12 ملم",
-      unit: "TON" as const,
-      price: 2650,
-      minOrderQty: 2,
-      stock: 120,
-      description: "حديد تسليح عالي الجهد، أطوال 12 متر.",
-    },
-    {
-      supplier: "alsafa",
-      category: "aggregate",
-      name: "ركام بحص 3/4",
-      unit: "CUBIC_METER" as const,
-      price: 55,
-      minOrderQty: 20,
-      stock: null,
-      description: "ركام مغسول نظيف مناسب للخرسانة.",
-    },
-    {
-      supplier: "modern-building",
-      category: "tiles",
-      name: "بلاط بورسلان أرضي 60×60",
-      unit: "SQUARE_METER" as const,
-      price: 42,
-      minOrderQty: 50,
-      stock: 2000,
-      description: "بورسلان مقاوم للخدش، تشكيلات متعددة.",
-    },
-    {
-      supplier: "modern-building",
-      category: "paint",
-      name: "دهان بلاستيك داخلي 18 لتر",
-      unit: "LITER" as const,
-      price: 9.5,
-      minOrderQty: 18,
-      stock: 800,
-      description: "دهان مائي داخلي عالي التغطية، قابل للغسل.",
-    },
-    {
-      supplier: "modern-building",
-      category: "plumbing",
-      name: "طقم خلاط مطبخ فاخر",
-      unit: "PIECE" as const,
-      price: 320,
-      minOrderQty: 1,
-      stock: 150,
-      description: "خلاط مطبخ ستانلس ستيل بضمان سنتين.",
-    },
-    {
-      supplier: "sharq-insulation",
-      category: "insulation",
-      name: "عازل مائي رول 4 ملم",
-      unit: "ROLL" as const,
-      price: 85,
-      minOrderQty: 10,
-      stock: 600,
-      description: "رول عازل بيتوميني للحماية من الرطوبة.",
-    },
-    {
-      supplier: "sharq-insulation",
-      category: "gypsum",
-      name: "لوح جبس عادي 12 ملم",
-      unit: "PIECE" as const,
-      price: 28,
-      minOrderQty: 20,
-      stock: 1500,
-      description: "ألواح جبسية بمواصفات قياسية للمقاولات الداخلية.",
-    },
-  ];
-
-  for (const material of materials) {
-    const supplierId = supplierIdBySlug.get(material.supplier);
+  for (const material of MATERIALS) {
     const categoryId = categoryBySlug.get(material.category);
-    if (!supplierId || !categoryId) continue;
+    if (!categoryId) continue;
 
     const exists = await prisma.material.findFirst({
-      where: { supplierId, name: material.name },
+      where: { name: material.name },
     });
     if (exists) continue;
 
-    const profile = supplierProfiles.find((s) => s.id === supplierId);
     await prisma.material.create({
       data: {
-        supplierId,
         categoryId,
         name: material.name,
         unit: material.unit,
@@ -232,28 +246,27 @@ async function main() {
         minOrderQty: material.minOrderQty,
         stock: material.stock,
         description: material.description,
-        city: profile?.city ?? "الرياض",
-        region: profile?.region ?? "الرياض",
+        city: material.city,
+        region: material.region,
       },
     });
   }
 
-  console.log("Seeding orders...");
+  console.log("Seeding demo order...");
   const customer = await prisma.user.findUnique({
-    where: { email: "customer@bunyan.sa" },
+    where: { email: CUSTOMER_EMAIL },
   });
-  const cement = await prisma.material.findFirst({
-    where: { name: "أسمنت بورتلاندي 50 كجم" },
-    include: { supplier: true },
+  const steel = await prisma.material.findFirst({
+    where: { name: "حديد تسليح 12 ملم — طول 12 م" },
   });
 
-  if (customer && cement) {
+  if (customer && steel) {
     const existing = await prisma.order.findUnique({
       where: { number: "ORD-DEMO-0001" },
     });
     if (!existing) {
-      const quantity = 200;
-      const unitPrice = cement.price;
+      const quantity = 5;
+      const unitPrice = steel.price;
       const subtotal = Math.round(unitPrice * quantity * 100) / 100;
       const vat = Math.round(subtotal * 0.15 * 100) / 100;
       const total = Math.round((subtotal + vat) * 100) / 100;
@@ -262,20 +275,19 @@ async function main() {
         data: {
           number: "ORD-DEMO-0001",
           customerId: customer.id,
-          requestedSupplierName: cement.supplier.companyName,
           subtotal,
           vat,
           total,
-          deliveryCity: "الرياض",
-          deliveryAddress: "حي النرجس، مشروع فيلا رقم 12",
+          deliveryCity: "الدمام",
+          deliveryAddress: "حي النابية، مشروع فيلا رقم 12",
           contactPhone: "0551111111",
           notes: "التسليم خلال أسبوع إن أمكن.",
           items: {
             create: [
               {
-                materialId: cement.id,
-                name: cement.name,
-                unit: cement.unit,
+                materialId: steel.id,
+                name: steel.name,
+                unit: steel.unit,
                 quantity,
                 unitPrice,
                 lineTotal: subtotal,
@@ -289,9 +301,8 @@ async function main() {
 
   console.log("Seed completed successfully.");
   console.log("Accounts:");
-  console.log("  Admin    -> om@r.sa / Omar2020@");
-  console.log("  Customer -> customer@bunyan.sa / Customer@12345");
-  console.log("  Supplier -> alsafa@bunyan.sa / Supplier@12345");
+  console.log(`  Admin    -> ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`);
+  console.log(`  Customer -> ${CUSTOMER_EMAIL} / ${CUSTOMER_PASSWORD}`);
 }
 
 main()

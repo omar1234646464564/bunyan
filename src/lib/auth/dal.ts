@@ -18,7 +18,6 @@ export const getCurrentUser = cache(async () => {
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    include: { supplier: true },
   });
 
   return user;

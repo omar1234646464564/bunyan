@@ -89,7 +89,7 @@ export function OrderForm({
       </Field>
 
       <Field label="ملاحظات" error={state.fieldErrors?.notes}>
-        <Textarea name="notes" placeholder="أي تفاصيل إضافية للمورد..." />
+        <Textarea name="notes" placeholder="أي تفاصيل إضافية لفريقنا..." />
       </Field>
 
       <div className="rounded-xl bg-zinc-50 p-4 text-sm">
@@ -108,7 +108,7 @@ export function OrderForm({
       </div>
 
       <SubmitButton className="w-full" pendingText="جارٍ إرسال الطلب...">
-        إرسال الطلب للمورد
+        إرسال الطلب
       </SubmitButton>
     </form>
   );

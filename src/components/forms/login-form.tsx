@@ -40,11 +40,7 @@ export function LoginForm() {
       <p className="text-center text-sm text-zinc-500">
         لا تملك حساباً؟{" "}
         <Link href="/register" className="font-medium text-teal-700">
-          أنشئ حساب عميل
-        </Link>{" "}
-        أو{" "}
-        <Link href="/register/supplier" className="font-medium text-teal-700">
-          سجّل كمنشأة
+          أنشئ حساباً جديداً
         </Link>
       </p>
     </form>

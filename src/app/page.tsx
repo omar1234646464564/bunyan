@@ -8,31 +8,30 @@ import {
   ShieldCheck,
   Truck,
   Handshake,
+  Phone,
+  Mail,
+  MapPin,
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MaterialCard } from "@/components/material-card";
-import { SupplierCard } from "@/components/supplier-card";
-import { APP_NAME } from "@/lib/constants";
+import {
+  APP_NAME,
+  COMPANY_ADDRESS,
+  COMPANY_EMAIL,
+  COMPANY_PHONE,
+  COMPANY_PHONE_DISPLAY,
+} from "@/lib/constants";
 
 export default async function HomePage() {
-  const [materials, suppliers, categories, materialCount, supplierCount] =
+  const [materials, categories, materialCount, categoryCount] =
     await Promise.all([
       prisma.material.findMany({
-        where: { isActive: true, supplier: { status: "APPROVED" } },
-        include: {
-          category: true,
-          supplier: { select: { companyName: true, slug: true } },
-        },
+        where: { isActive: true },
+        include: { category: true },
         orderBy: { createdAt: "desc" },
         take: 8,
-      }),
-      prisma.supplierProfile.findMany({
-        where: { status: "APPROVED" },
-        include: { _count: { select: { materials: true } } },
-        orderBy: [{ ratingCount: "desc" }, { createdAt: "asc" }],
-        take: 6,
       }),
       prisma.category.findMany({
         include: { _count: { select: { materials: true } } },
@@ -40,7 +39,7 @@ export default async function HomePage() {
         take: 8,
       }),
       prisma.material.count({ where: { isActive: true } }),
-      prisma.supplierProfile.count({ where: { status: "APPROVED" } }),
+      prisma.category.count(),
     ]);
 
   return (
@@ -49,14 +48,15 @@ export default async function HomePage() {
         <div className="mx-auto max-w-6xl px-4 py-20 text-center">
           <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm">
             <HardHat className="h-4 w-4" />
-            منصة سعودية لمواد البناء
+            توريد مواد البناء والحديد والأخشاب
           </span>
           <h1 className="mx-auto mt-6 max-w-3xl text-3xl font-bold leading-tight sm:text-5xl">
-            كل مواد البناء التي تحتاجها، من موردين موثوقين في مكان واحد
+            {APP_NAME} — شريكك الموثوق في توريد مواد البناء
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-teal-50/90">
-            {APP_NAME} يربط موردي مواد البناء بعملاء المقاولات والمشاريع في جميع
-            مناطق المملكة. تصفح، قارن الأسعار، وأرسل طلبك مباشرة للمورد.
+            نوفّر منتجات الحديد والصلب، والأخشاب، والشبك والأسلاك، والأسوار
+            والأسقف المعدنية، وشبك الأرضيات، لمشاريع المقاولات والصناعة في جميع
+            مناطق المملكة العربية السعودية.
           </p>
 
           <form
@@ -67,7 +67,7 @@ export default async function HomePage() {
               <Search className="h-5 w-5" />
               <input
                 name="q"
-                placeholder="ابحث عن أسمنت، حديد، بلاط..."
+                placeholder="ابحث عن حديد، خشب، شبك..."
                 className="h-10 w-full bg-transparent text-sm text-zinc-900 outline-none placeholder:text-zinc-400"
               />
             </div>
@@ -78,13 +78,13 @@ export default async function HomePage() {
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm text-teal-50/80">
             <span className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4" /> موردون معتمدون
+              <ShieldCheck className="h-4 w-4" /> جودة موثوقة
             </span>
             <span className="flex items-center gap-2">
-              <PackageSearch className="h-4 w-4" /> {materialCount}+ مادة
+              <PackageSearch className="h-4 w-4" /> {materialCount}+ منتج
             </span>
             <span className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" /> {supplierCount} منشأة
+              <Building2 className="h-4 w-4" /> {categoryCount} تصنيف
             </span>
           </div>
         </div>
@@ -105,7 +105,7 @@ export default async function HomePage() {
                   {category.name}
                 </p>
                 <p className="mt-1 text-xs text-zinc-500">
-                  {category._count.materials} مادة
+                  {category._count.materials} منتج
                 </p>
               </Card>
             </Link>
@@ -115,7 +115,7 @@ export default async function HomePage() {
 
       <section className="mx-auto max-w-6xl px-4 py-8">
         <div className="flex items-end justify-between">
-          <h2 className="text-xl font-bold text-zinc-900">أحدث المواد</h2>
+          <h2 className="text-xl font-bold text-zinc-900">أحدث المنتجات</h2>
           <Link
             href="/materials"
             className="flex items-center gap-1 text-sm font-medium text-teal-700"
@@ -125,7 +125,7 @@ export default async function HomePage() {
         </div>
         {materials.length === 0 ? (
           <Card className="mt-5 p-8 text-center text-sm text-zinc-500">
-            لا توجد مواد منشورة بعد. سيتم عرض المواد فور اعتماد الموردين.
+            لا توجد منتجات منشورة بعد.
           </Card>
         ) : (
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -136,25 +136,6 @@ export default async function HomePage() {
         )}
       </section>
 
-      {suppliers.length > 0 ? (
-        <section className="mx-auto max-w-6xl px-4 py-8">
-          <div className="flex items-end justify-between">
-            <h2 className="text-xl font-bold text-zinc-900">موردون مميزون</h2>
-            <Link
-              href="/suppliers"
-              className="flex items-center gap-1 text-sm font-medium text-teal-700"
-            >
-              دليل الموردين <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </div>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {suppliers.map((supplier) => (
-              <SupplierCard key={supplier.id} supplier={supplier} />
-            ))}
-          </div>
-        </section>
-      ) : null}
-
       <section className="mx-auto max-w-6xl px-4 py-12">
         <h2 className="text-center text-xl font-bold text-zinc-900">
           كيف تعمل المنصة؟
@@ -162,43 +143,59 @@ export default async function HomePage() {
         <div className="mt-6 grid gap-4 sm:grid-cols-3">
           <Card className="p-6 text-center">
             <PackageSearch className="mx-auto h-8 w-8 text-teal-700" />
-            <p className="mt-3 font-semibold text-zinc-900">1. ابحث وقارن</p>
+            <p className="mt-3 font-semibold text-zinc-900">1. ابحث واختر</p>
             <p className="mt-1 text-sm text-zinc-600">
-              تصفح المواد، قارن الأسعار والمواصفات بين الموردين المعتمدين.
+              تصفح الكتالوج وقارن المواصفات والأسعار بحسب التصنيف.
             </p>
           </Card>
           <Card className="p-6 text-center">
             <Handshake className="mx-auto h-8 w-8 text-teal-700" />
-            <p className="mt-3 font-semibold text-zinc-900">2. اطلب مباشرة</p>
+            <p className="mt-3 font-semibold text-zinc-900">2. أرسل طلبك</p>
             <p className="mt-1 text-sm text-zinc-600">
-              أرسل طلبك للمورد مع الكميات وتفاصيل التسليم، وتواصل معه داخل المنصة.
+              أنشئ طلبك بالكميات وتفاصيل التسليم، وسيتواصل معك فريقنا لتأكيده.
             </p>
           </Card>
           <Card className="p-6 text-center">
             <Truck className="mx-auto h-8 w-8 text-teal-700" />
-            <p className="mt-3 font-semibold text-zinc-900">3. استلم وتابع</p>
+            <p className="mt-3 font-semibold text-zinc-900">3. تابع التسليم</p>
             <p className="mt-1 text-sm text-zinc-600">
-              تابع حالة الطلب حتى التسليم، ثم قيّم تجربتك مع المورد.
+              تابع حالة طلبك من التأكيد حتى التسليم مباشرة من لوحتك.
             </p>
           </Card>
         </div>
       </section>
 
       <section className="mx-auto max-w-6xl px-4 pb-16">
-        <Card className="flex flex-col items-center justify-between gap-4 bg-teal-50 p-8 sm:flex-row">
+        <Card className="flex flex-col items-center justify-between gap-6 bg-teal-50 p-8 sm:flex-row">
           <div>
             <h2 className="text-lg font-bold text-teal-900">
-              هل أنت مورد لمواد البناء؟
+              تواصل مع فريق سينوفا
             </h2>
             <p className="mt-1 text-sm text-teal-800/80">
-              سجّل منشأتك مجاناً واعرض موادك أمام عملاء المقاولات في كل المملكة.
+              فريقنا جاهز لمساعدتك في اختيار المنتجات وطلبات التوريد.
             </p>
+            <ul className="mt-4 space-y-2 text-sm text-teal-900">
+              <li className="flex items-center gap-2">
+                <Phone className="h-4 w-4" />
+                <a href={`tel:${COMPANY_PHONE}`} dir="ltr">
+                  {COMPANY_PHONE_DISPLAY}
+                </a>
+              </li>
+              <li className="flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                <a href={`mailto:${COMPANY_EMAIL}`}>{COMPANY_EMAIL}</a>
+              </li>
+              <li className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                {COMPANY_ADDRESS}
+              </li>
+            </ul>
           </div>
           <Link
-            href="/register/supplier"
+            href="/register"
             className={buttonVariants({ size: "lg", className: "shrink-0" })}
           >
-            سجّل منشأتك
+            أنشئ حساباً
           </Link>
         </Card>
       </section>

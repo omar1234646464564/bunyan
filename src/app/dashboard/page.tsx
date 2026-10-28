@@ -13,7 +13,6 @@ export const metadata = { title: "لوحتي" };
 
 export default async function DashboardPage() {
   const user = await requireUser();
-  if (user.role === "SUPPLIER") redirect("/supplier/dashboard");
   if (user.role === "ADMIN") redirect("/admin");
 
   const [orders, grouped] = await Promise.all([
@@ -44,12 +43,12 @@ export default async function DashboardPage() {
             مرحباً، {user.name}
           </h1>
           <p className="mt-1 text-sm text-zinc-500">
-            تابع طلباتك وتواصل مع فريق بنيان.
+            تابع طلباتك وتواصل مع فريق سينوفا.
           </p>
         </div>
         <Link href="/materials" className={buttonVariants()}>
           <ShoppingCart className="h-4 w-4" />
-          تسوّق المواد
+          تسوّق المنتجات
         </Link>
       </div>
 
@@ -57,8 +56,8 @@ export default async function DashboardPage() {
         <StatCard icon={<Package className="h-5 w-5" />} label="إجمالي الطلبات" value={total} />
         <StatCard
           icon={<Clock className="h-5 w-5" />}
-          label="بانتظار التعيين"
-          value={countOf("AWAITING_SUPPLIER")}
+          label="بانتظار المراجعة"
+          value={countOf("PENDING")}
         />
         <StatCard
           icon={<CheckCircle2 className="h-5 w-5" />}
@@ -79,9 +78,9 @@ export default async function DashboardPage() {
           {orders.length === 0 ? (
             <EmptyState
               title="لا توجد طلبات بعد"
-              description="ابدأ بتصفح المواد وإرسال طلب."
+              description="ابدأ بتصفح المنتجات وإرسال طلب."
               actionHref="/materials"
-              actionLabel="تصفح المواد"
+              actionLabel="تصفح المنتجات"
             />
           ) : (
             <Card className="divide-y divide-zinc-100">
@@ -97,7 +96,7 @@ export default async function DashboardPage() {
                       <OrderStatusBadge status={order.status} />
                     </p>
                     <p className="mt-1 line-clamp-1 text-xs text-zinc-500">
-                      بنيان · {order._count.items} مادة ·{" "}
+                      سينوفا · {order._count.items} منتج ·{" "}
                       {formatDate(order.createdAt)}
                     </p>
                   </div>

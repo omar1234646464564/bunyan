@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { Users, Building2, Package, ClipboardList, Clock, Truck } from "lucide-react";
+import { Users, Package, ClipboardList, Clock, Boxes } from "lucide-react";
 import { requireRole } from "@/lib/auth/dal";
 import { prisma } from "@/lib/prisma";
 import { Card } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
-import { SupplierStatusBadge, OrderStatusBadge } from "@/components/status-badge";
+import { OrderStatusBadge } from "@/components/status-badge";
 import { formatDate, formatSAR, toNumber } from "@/lib/format";
 
 export const metadata = { title: "لوحة الإدارة" };
@@ -12,43 +12,33 @@ export const metadata = { title: "لوحة الإدارة" };
 export default async function AdminDashboardPage() {
   await requireRole("ADMIN");
 
-  const [
-    usersCount,
-    suppliersCount,
-    pendingCount,
-    materialsCount,
-    ordersCount,
-    awaitingCount,
-    pendingSuppliers,
-    recentOrders,
-  ] = await Promise.all([
-    prisma.user.count(),
-    prisma.supplierProfile.count(),
-    prisma.supplierProfile.count({ where: { status: "PENDING" } }),
-    prisma.material.count(),
-    prisma.order.count(),
-    prisma.order.count({ where: { status: "AWAITING_SUPPLIER" } }),
-    prisma.supplierProfile.findMany({
-      where: { status: "PENDING" },
-      orderBy: { createdAt: "asc" },
-      take: 6,
-    }),
-    prisma.order.findMany({
-      include: { customer: { select: { name: true } } },
-      orderBy: { createdAt: "desc" },
-      take: 6,
-    }),
-  ]);
+  const [usersCount, categoriesCount, materialsCount, ordersCount, pendingCount, recentOrders, recentMaterials] =
+    await Promise.all([
+      prisma.user.count(),
+      prisma.category.count(),
+      prisma.material.count(),
+      prisma.order.count(),
+      prisma.order.count({ where: { status: "PENDING" } }),
+      prisma.order.findMany({
+        include: { customer: { select: { name: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 6,
+      }),
+      prisma.material.findMany({
+        include: { category: { select: { name: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 6,
+      }),
+    ]);
 
   return (
     <div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard icon={<Users className="h-5 w-5" />} label="المستخدمون" value={usersCount} />
-        <StatCard icon={<Building2 className="h-5 w-5" />} label="المنشآت" value={suppliersCount} />
-        <StatCard icon={<Clock className="h-5 w-5" />} label="بانتظار الاعتماد" value={pendingCount} highlight />
-        <StatCard icon={<Package className="h-5 w-5" />} label="المواد" value={materialsCount} />
+        <StatCard icon={<Boxes className="h-5 w-5" />} label="التصنيفات" value={categoriesCount} />
+        <StatCard icon={<Package className="h-5 w-5" />} label="المنتجات" value={materialsCount} />
         <StatCard icon={<ClipboardList className="h-5 w-5" />} label="الطلبات" value={ordersCount} />
-        <StatCard icon={<Truck className="h-5 w-5" />} label="بانتظار تعيين مورد" value={awaitingCount} highlight />
+        <StatCard icon={<Clock className="h-5 w-5" />} label="بانتظار المراجعة" value={pendingCount} highlight />
       </div>
 
       <div className="mt-8">
@@ -96,40 +86,39 @@ export default async function AdminDashboardPage() {
 
       <div className="mt-8">
         <div className="flex items-end justify-between">
-          <h2 className="text-lg font-bold text-zinc-900">
-            طلبات اعتماد الموردين
-          </h2>
+          <h2 className="text-lg font-bold text-zinc-900">أحدث المنتجات</h2>
           <Link
-            href="/admin/suppliers?status=PENDING"
+            href="/admin/materials"
             className={buttonVariants({ size: "sm" })}
           >
-            إدارة الموردين
+            إدارة المنتجات
           </Link>
         </div>
 
         <div className="mt-4">
-          {pendingSuppliers.length === 0 ? (
+          {recentMaterials.length === 0 ? (
             <Card className="p-6 text-center text-sm text-zinc-500">
-              لا توجد طلبات اعتماد حالياً.
+              لا توجد منتجات بعد.
             </Card>
           ) : (
             <Card className="divide-y divide-zinc-100">
-              {pendingSuppliers.map((supplier) => (
+              {recentMaterials.map((material) => (
                 <Link
-                  key={supplier.id}
-                  href={`/admin/suppliers?status=PENDING`}
+                  key={material.id}
+                  href={`/admin/materials/${material.id}/edit`}
                   className="flex items-center justify-between gap-4 p-4 hover:bg-zinc-50"
                 >
                   <div>
                     <p className="text-sm font-semibold text-zinc-900">
-                      {supplier.companyName}
+                      {material.name}
                     </p>
                     <p className="mt-1 text-xs text-zinc-500">
-                      {supplier.city} — {supplier.region} ·{" "}
-                      {formatDate(supplier.createdAt)}
+                      {material.category.name} · {formatDate(material.createdAt)}
                     </p>
                   </div>
-                  <SupplierStatusBadge status={supplier.status} />
+                  <span className="shrink-0 text-sm font-bold text-zinc-900">
+                    {formatSAR(toNumber(material.price))}
+                  </span>
                 </Link>
               ))}
             </Card>

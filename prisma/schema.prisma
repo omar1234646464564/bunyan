@@ -1,4 +1,4 @@
-// بنيان - بناء منصة تربط موردي مواد البناء بعملاء المقاولات في السعودية
+// سينوفا إنترناشيونال — كتالوج مواد البناء والحديد والأخشاب
 // Prisma schema for SQLite
 //
 // ملاحظة: SQLite لا يدعم أنواع enum الأصلية ولا النوع Decimal ولا مرشّح
@@ -22,43 +22,12 @@ model User {
   phone        String?
   city         String?
   passwordHash String
-  role         String   @default("CUSTOMER") // CUSTOMER | SUPPLIER | ADMIN
+  role         String   @default("CUSTOMER") // CUSTOMER | ADMIN
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  supplier     SupplierProfile?
-  orders       Order[]          @relation("CustomerOrders")
-  sentMessages Message[]        @relation("SentMessages")
-  reviews      Review[]
-}
-
-model SupplierProfile {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  companyName String
-  slug        String   @unique
-  crNumber    String? // رقم السجل التجاري
-  vatNumber   String? // الرقم الضريبي
-  phone       String?
-  whatsapp    String?
-  city        String
-  region      String
-  address     String?
-  description String?
-  logoUrl     String?
-  status      String   @default("PENDING") // PENDING | APPROVED | REJECTED | SUSPENDED
-  ratingSum   Int      @default(0)
-  ratingCount Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  materials Material[]
-  orders    Order[]
-  reviews   Review[]
-
-  @@index([status])
-  @@index([city])
+  orders       Order[]   @relation("CustomerOrders")
+  sentMessages Message[] @relation("SentMessages")
 }
 
 model Category {
@@ -73,8 +42,6 @@ model Category {
 
 model Material {
   id          String   @id @default(cuid())
-  supplierId  String
-  supplier    SupplierProfile @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   categoryId  String
   category    Category @relation(fields: [categoryId], references: [id])
   name        String
@@ -93,21 +60,16 @@ model Material {
   orderItems OrderItem[]
 
   @@index([categoryId])
-  @@index([supplierId])
   @@index([city])
   @@index([isActive])
 }
 
 model Order {
-  id              String   @id @default(cuid())
-  number          String   @unique
+  id              String    @id @default(cuid())
+  number          String    @unique
   customerId      String
-  customer        User     @relation("CustomerOrders", fields: [customerId], references: [id])
-  supplierId      String?
-  supplier        SupplierProfile? @relation(fields: [supplierId], references: [id])
-  requestedSupplierName String? // اسم مورد المادة المطلوبة (مرجعي للإدارة)
-  assignedAt      DateTime?
-  status          String   @default("AWAITING_SUPPLIER") // AWAITING_SUPPLIER | CONFIRMED | PROCESSING | SHIPPED | DELIVERED | CANCELLED
+  customer        User      @relation("CustomerOrders", fields: [customerId], references: [id])
+  status          String    @default("PENDING") // PENDING | CONFIRMED | PROCESSING | SHIPPED | DELIVERED | CANCELLED
   subtotal        Float
   vat             Float
   total           Float
@@ -116,22 +78,20 @@ model Order {
   deliveryDate    DateTime?
   contactPhone    String?
   notes           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   items    OrderItem[]
   messages Message[]
-  review   Review?
 
   @@index([customerId])
-  @@index([supplierId])
   @@index([status])
 }
 
 model OrderItem {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   orderId    String
-  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order      Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   materialId String?
   material   Material? @relation(fields: [materialId], references: [id], onDelete: SetNull)
   name       String
@@ -155,19 +115,4 @@ model Message {
   readAt     DateTime?
 
   @@index([orderId])
-}
-
-model Review {
-  id         String   @id @default(cuid())
-  supplierId String
-  supplier   SupplierProfile @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  customerId String
-  customer   User     @relation(fields: [customerId], references: [id])
-  orderId    String?  @unique
-  order      Order?   @relation(fields: [orderId], references: [id])
-  rating     Int
-  comment    String?
-  createdAt  DateTime @default(now())
-
-  @@index([supplierId])
 }
