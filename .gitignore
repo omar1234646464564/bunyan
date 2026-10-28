@@ -45,3 +45,5 @@ prisma/dev.db-journal
 
 # generated postgres schema (created at build time)
 prisma/schema.generated.prisma
+
+.vercel

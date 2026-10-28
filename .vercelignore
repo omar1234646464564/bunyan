@@ -1,0 +1,13 @@
+# Never upload local env files to Vercel (it has its own env vars).
+.env
+.env.*.local
+
+# Local server deployment kit is not part of the app build.
+deploy/
+
+# Local build artifacts
+.next/
+node_modules/
+tsconfig.tsbuildinfo
+prisma/*.db
+prisma/schema.generated.prisma
