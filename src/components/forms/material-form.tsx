@@ -202,6 +202,10 @@ export function MaterialForm({
         error={imageErrors}
       >
         <div className="space-y-3">
+          {/* Checked boxes that are re-rendered away lose their value, so the
+              flag is mirrored into a hidden field to reach the server action. */}
+          {removeImage ? <input type="hidden" name="removeImage" value="on" /> : null}
+
           {preview && !removeImage ? (
             <div className="flex items-center gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -214,7 +218,6 @@ export function MaterialForm({
                 <label className="flex items-center gap-2 text-sm text-zinc-600">
                   <input
                     type="checkbox"
-                    name="removeImage"
                     checked={removeImage}
                     onChange={(event) => {
                       setRemoveImage(event.currentTarget.checked);
@@ -234,7 +237,16 @@ export function MaterialForm({
               )}
             </div>
           ) : removeImage ? (
-            <p className="text-sm text-zinc-500">ستُزال الصورة عند الحفظ.</p>
+            <p className="flex items-center gap-3 text-sm text-zinc-500">
+              ستُزال الصورة عند الحفظ.
+              <button
+                type="button"
+                onClick={() => setRemoveImage(false)}
+                className="rounded-lg border border-zinc-300 px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+              >
+                تراجع
+              </button>
+            </p>
           ) : null}
 
           <input
