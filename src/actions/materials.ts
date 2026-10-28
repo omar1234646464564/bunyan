@@ -6,6 +6,12 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/auth/dal";
 import { materialSchema } from "@/lib/validation";
 import { UNITS } from "@/lib/constants";
+import {
+  IMAGE_MAX_BYTES,
+  IMAGE_MAX_LABEL,
+  IMAGE_TYPES,
+  materialImagePath,
+} from "@/lib/images";
 import { type ActionState, toFieldErrors } from "@/lib/action-state";
 
 function parseMaterial(formData: FormData) {
@@ -19,8 +25,31 @@ function parseMaterial(formData: FormData) {
     stock: formData.get("stock") || undefined,
     city: formData.get("city"),
     region: formData.get("region"),
-    imageUrl: formData.get("imageUrl") ?? "",
   });
+}
+
+type PickedImage = { file: File | null; error: string | null };
+
+async function readImage(formData: FormData): Promise<PickedImage> {
+  const value = formData.get("image");
+  if (!(value instanceof File) || value.size === 0) {
+    return { file: null, error: null };
+  }
+  if (!IMAGE_TYPES.includes(value.type as (typeof IMAGE_TYPES)[number])) {
+    return { file: null, error: "صيغة الصورة غير مدعومة (JPG أو PNG أو WebP أو GIF)" };
+  }
+  if (value.size > IMAGE_MAX_BYTES) {
+    return { file: null, error: `حجم الصورة يجب أن يكون أقل من ${IMAGE_MAX_LABEL}` };
+  }
+  return { file: value, error: null };
+}
+
+async function imageFields(file: File, materialId: string) {
+  return {
+    imageData: Buffer.from(await file.arrayBuffer()),
+    imageMime: file.type,
+    imageUrl: materialImagePath(materialId, Date.now()),
+  };
 }
 
 export async function createMaterial(
@@ -32,6 +61,9 @@ export async function createMaterial(
   const parsed = parseMaterial(formData);
   if (!parsed.success) return { fieldErrors: toFieldErrors(parsed.error.issues) };
 
+  const image = await readImage(formData);
+  if (image.error) return { fieldErrors: { image: [image.error] } };
+
   const d = parsed.data;
   if (!UNITS.includes(d.unit)) {
     return { fieldErrors: { unit: ["وحدة قياس غير صالحة"] } };
@@ -42,7 +74,7 @@ export async function createMaterial(
   });
   if (!category) return { fieldErrors: { categoryId: ["التصنيف غير موجود"] } };
 
-  await prisma.material.create({
+  const material = await prisma.material.create({
     data: {
       categoryId: d.categoryId,
       name: d.name,
@@ -53,9 +85,15 @@ export async function createMaterial(
       stock: d.stock ?? null,
       city: d.city,
       region: d.region,
-      imageUrl: d.imageUrl || null,
     },
   });
+
+  if (image.file) {
+    await prisma.material.update({
+      where: { id: material.id },
+      data: await imageFields(image.file, material.id),
+    });
+  }
 
   revalidatePath("/admin/materials");
   revalidatePath("/materials");
@@ -69,11 +107,17 @@ export async function updateMaterial(
 ): Promise<ActionState> {
   await requireRole("ADMIN");
 
-  const existing = await prisma.material.findUnique({ where: { id } });
-  if (!existing) return { error: "المادة غير موجودة" };
+  const existing = await prisma.material.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+  if (!existing) return { error: "المنتج غير موجود" };
 
   const parsed = parseMaterial(formData);
   if (!parsed.success) return { fieldErrors: toFieldErrors(parsed.error.issues) };
+
+  const image = await readImage(formData);
+  if (image.error) return { fieldErrors: { image: [image.error] } };
 
   const d = parsed.data;
   if (!UNITS.includes(d.unit)) {
@@ -84,6 +128,8 @@ export async function updateMaterial(
     select: { id: true },
   });
   if (!category) return { fieldErrors: { categoryId: ["التصنيف غير موجود"] } };
+
+  const removeImage = formData.get("removeImage") === "on";
 
   await prisma.material.update({
     where: { id },
@@ -97,7 +143,11 @@ export async function updateMaterial(
       stock: d.stock ?? null,
       city: d.city,
       region: d.region,
-      imageUrl: d.imageUrl || null,
+      ...(image.file
+        ? await imageFields(image.file, id)
+        : removeImage
+          ? { imageData: null, imageMime: null, imageUrl: null }
+          : {}),
     },
   });
 

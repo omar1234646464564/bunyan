@@ -51,6 +51,8 @@ model Material {
   minOrderQty Int      @default(1)
   stock       Int?
   imageUrl    String?
+  imageData   Bytes?
+  imageMime   String?
   isActive    Boolean  @default(true)
   city        String
   region      String

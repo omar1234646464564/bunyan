@@ -50,20 +50,34 @@ export default async function AdminMaterialsPage() {
                 key={material.id}
                 className="flex flex-wrap items-center justify-between gap-4 p-4"
               >
-                <div className="min-w-0">
-                  <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-zinc-900">
-                    {material.name}
-                    {!material.isActive ? (
-                      <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600">
-                        غير منشور
-                      </span>
-                    ) : null}
-                  </p>
-                  <p className="mt-1 text-xs text-zinc-500">
-                    {material.category.name} ·{" "}
-                    {formatSAR(toNumber(material.price))} /{" "}
-                    {UNIT_LABELS[material.unit] ?? material.unit} · {material.city}
-                  </p>
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-teal-50 to-zinc-100 text-lg font-bold text-teal-900/40">
+                    {material.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={material.imageUrl}
+                        alt={material.name}
+                        className="h-14 w-14 object-cover"
+                      />
+                    ) : (
+                      material.name.slice(0, 1)
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-zinc-900">
+                      {material.name}
+                      {!material.isActive ? (
+                        <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600">
+                          غير منشور
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500">
+                      {material.category.name} ·{" "}
+                      {formatSAR(toNumber(material.price))} /{" "}
+                      {UNIT_LABELS[material.unit] ?? material.unit} · {material.city}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Link

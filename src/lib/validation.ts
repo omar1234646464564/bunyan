@@ -33,7 +33,7 @@ export const loginSchema = z.object({
 });
 
 export const materialSchema = z.object({
-  name: z.string().trim().min(2, "اسم المادة مطلوب"),
+  name: z.string().trim().min(2, "اسم المنتج مطلوب"),
   categoryId: z.string().trim().min(1, "التصنيف مطلوب"),
   description: z.string().trim().max(2000).optional(),
   unit: z.string().trim().min(1, "وحدة القياس مطلوبة"),
@@ -42,7 +42,6 @@ export const materialSchema = z.object({
   stock: z.coerce.number().int().nonnegative().optional(),
   city: z.string().trim().min(1, "المدينة مطلوبة"),
   region: z.string().trim().min(1, "المنطقة مطلوبة"),
-  imageUrl: z.string().trim().url("رابط الصورة غير صالح").optional().or(z.literal("")),
 });
 
 export const messageSchema = z.object({
